@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+dist/
+build/
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Uploads (keep .gitkeep for directory structure)
+backend/uploads/**/*.jpg
+backend/uploads/**/*.png
+backend/uploads/**/*.jpeg
+backend/uploads/**/*.gif
+backend/uploads/**/*.webp
+
+# Artifacts
+backend/nul
+*.nul
