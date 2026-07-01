@@ -36,7 +36,7 @@ const barangController = {
   create: async (req, res) => {
     try {
       const data = req.body;
-      const result = await barangService.create(data);
+      const result = await barangService.create(data, req.user);
       res.status(201).json({ success: true, data: result, message: 'Barang berhasil ditambahkan' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -46,7 +46,7 @@ const barangController = {
   update: async (req, res) => {
     try {
       const data = req.body;
-      const result = await barangService.update(req.params.id, data);
+      const result = await barangService.update(req.params.id, data, req.user);
       res.json({ success: true, data: result, message: 'Barang berhasil diperbarui' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -68,7 +68,7 @@ const barangController = {
 
   delete: async (req, res) => {
     try {
-      const result = await barangService.delete(req.params.id);
+      const result = await barangService.delete(req.params.id, req.user);
       res.json({ success: true, data: result, message: 'Barang berhasil dihapus' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });

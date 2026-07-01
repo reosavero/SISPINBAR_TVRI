@@ -1,5 +1,6 @@
 // ============================================
 // BARANG QUERIES - Sistem Peminjaman Barang TVRI
+// (Updated: soft delete support)
 // ============================================
 
 const barangQueries = {
@@ -11,7 +12,8 @@ const barangQueries = {
       ), 0)) AS tersedia
     FROM barang b
     LEFT JOIN kategori k ON b.kategori_id = k.id
-    WHERE (? IS NULL OR b.nama_barang LIKE CONCAT('%', ?, '%'))
+    WHERE b.deleted_at IS NULL
+    AND (? IS NULL OR b.nama_barang LIKE CONCAT('%', ?, '%'))
     AND (? IS NULL OR b.kategori_id = ?)
     AND (? IS NULL OR b.status = ?)
     ORDER BY b.created_at DESC
@@ -21,7 +23,8 @@ const barangQueries = {
   countAll: `
     SELECT COUNT(*) AS total
     FROM barang b
-    WHERE (? IS NULL OR b.nama_barang LIKE CONCAT('%', ?, '%'))
+    WHERE b.deleted_at IS NULL
+    AND (? IS NULL OR b.nama_barang LIKE CONCAT('%', ?, '%'))
     AND (? IS NULL OR b.kategori_id = ?)
     AND (? IS NULL OR b.status = ?)
   `,
@@ -34,14 +37,23 @@ const barangQueries = {
       ), 0)) AS tersedia
     FROM barang b
     LEFT JOIN kategori k ON b.kategori_id = k.id
-    WHERE b.id = ?
+    WHERE b.id = ? AND b.deleted_at IS NULL
   `,
 
   getAvailable: `
-    SELECT b.*, k.nama AS kategori_nama
+    SELECT b.*, k.nama AS kategori_nama,
+      (b.jumlah - COALESCE((
+        SELECT SUM(p.jumlah) FROM peminjaman p
+        WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')
+      ), 0)) AS tersedia
     FROM barang b
     LEFT JOIN kategori k ON b.kategori_id = k.id
-    WHERE b.status = 'Tersedia'
+    WHERE b.deleted_at IS NULL
+    AND b.status IN ('Tersedia', 'Dipinjam')
+    AND (b.jumlah - COALESCE((
+      SELECT SUM(p.jumlah) FROM peminjaman p
+      WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')
+    ), 0)) > 0
     ORDER BY b.nama_barang ASC
   `,
 
@@ -58,6 +70,10 @@ const barangQueries = {
 
   updateFoto: `
     UPDATE barang SET foto = ? WHERE id = ?
+  `,
+
+  softDelete: `
+    UPDATE barang SET deleted_at = NOW() WHERE id = ?
   `,
 };
 

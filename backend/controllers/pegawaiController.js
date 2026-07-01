@@ -54,7 +54,7 @@ const pegawaiController = {
 
   delete: async (req, res) => {
     try {
-      const result = await pegawaiService.delete(req.params.id);
+      const result = await pegawaiService.delete(req.params.id, req.user);
       res.json({ success: true, data: result, message: 'Pegawai berhasil dihapus' });
     } catch (error) {
       console.error('Delete pegawai error:', error);

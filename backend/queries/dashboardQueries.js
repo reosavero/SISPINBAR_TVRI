@@ -1,18 +1,51 @@
 // ============================================
 // DASHBOARD QUERIES - Sistem Peminjaman Barang TVRI
+// (Updated: pegawai stats + soft delete support)
 // ============================================
 
 const dashboardQueries = {
   getStats: `
     SELECT
-      (SELECT COUNT(*) FROM barang) AS total_barang,
-      (SELECT COUNT(*) FROM barang WHERE status = 'Tersedia') AS barang_tersedia,
-      (SELECT COUNT(*) FROM barang WHERE status = 'Dipinjam') AS barang_dipinjam,
-      (SELECT COUNT(*) FROM barang WHERE status = 'Rusak') AS barang_rusak,
-      (SELECT COUNT(*) FROM barang WHERE status = 'Dalam Perbaikan') AS barang_perbaikan,
-      (SELECT COUNT(*) FROM pegawai) AS total_pegawai,
+      (SELECT COUNT(*) FROM barang WHERE deleted_at IS NULL) AS total_barang,
+      (SELECT COUNT(*) FROM barang WHERE status = 'Tersedia' AND deleted_at IS NULL) AS barang_tersedia,
+      (SELECT COUNT(*) FROM barang WHERE status = 'Dipinjam' AND deleted_at IS NULL) AS barang_dipinjam,
+      (SELECT COUNT(*) FROM barang WHERE status = 'Rusak' AND deleted_at IS NULL) AS barang_rusak,
+      (SELECT COUNT(*) FROM barang WHERE status = 'Dalam Perbaikan' AND deleted_at IS NULL) AS barang_perbaikan,
+      (SELECT COUNT(*) FROM pegawai WHERE deleted_at IS NULL) AS total_pegawai,
       (SELECT COUNT(*) FROM peminjaman WHERE DATE(tanggal_pinjam) = CURDATE()) AS peminjaman_hari_ini,
       (SELECT COUNT(*) FROM pengembalian WHERE DATE(tanggal_kembali_aktual) = CURDATE()) AS pengembalian_hari_ini
+  `,
+
+  // Pegawai dashboard stats
+  getPegawaiStats: `
+    SELECT
+      (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')) AS aktif,
+      (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status = 'Menunggu Persetujuan') AS menunggu,
+      (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status = 'Dipinjam') AS sedang_dipinjam,
+      (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status = 'Dikembalikan') AS selesai,
+      (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status = 'Ditolak') AS ditolak
+  `,
+
+  // Pegawai recent peminjaman
+  getPegawaiRecentPeminjaman: `
+    SELECT p.*, b.nama_barang AS barang_nama, b.kode_barang, b.foto AS barang_foto,
+           k.nama AS kategori_nama
+    FROM peminjaman p
+    LEFT JOIN barang b ON p.barang_id = b.id
+    LEFT JOIN kategori k ON b.kategori_id = k.id
+    WHERE p.pegawai_id = ?
+    ORDER BY p.created_at DESC
+    LIMIT ? OFFSET ?
+  `,
+
+  // Pegawai perpanjangan pending
+  getPegawaiPerpanjanganPending: `
+    SELECT pp.*, p.nomor_peminjaman, b.nama_barang AS barang_nama
+    FROM perpanjangan pp
+    LEFT JOIN peminjaman p ON pp.peminjaman_id = p.id
+    LEFT JOIN barang b ON p.barang_id = b.id
+    WHERE p.pegawai_id = ? AND pp.status = 'Menunggu Persetujuan'
+    ORDER BY pp.created_at DESC
   `,
 
   getMonthlyLoans: `
@@ -34,6 +67,7 @@ const dashboardQueries = {
   getBarangStatus: `
     SELECT status, COUNT(*) AS total
     FROM barang
+    WHERE deleted_at IS NULL
     GROUP BY status
   `,
 

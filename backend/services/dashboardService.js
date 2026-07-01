@@ -55,6 +55,35 @@ const dashboardService = {
     return rows;
   },
 
+  // ========== PEGAWAI DASHBOARD ==========
+
+  getPegawaiStats: async (pegawaiId) => {
+    const [rows] = await pool.execute(dashboardQueries.getPegawaiStats, [
+      pegawaiId, pegawaiId, pegawaiId, pegawaiId, pegawaiId,
+    ]);
+    const row = rows[0];
+    return {
+      aktif: row.aktif,
+      menunggu: row.menunggu,
+      sedangDipinjam: row.sedang_dipinjam,
+      selesai: row.selesai,
+      ditolak: row.ditolak,
+    };
+  },
+
+  getPegawaiRecentPeminjaman: async (pegawaiId, page = 1, limit = 5) => {
+    const offset = (page - 1) * limit;
+    const [rows] = await pool.execute(dashboardQueries.getPegawaiRecentPeminjaman, [
+      pegawaiId, limit, offset,
+    ]);
+    return rows;
+  },
+
+  getPegawaiPerpanjanganPending: async (pegawaiId) => {
+    const [rows] = await pool.execute(dashboardQueries.getPegawaiPerpanjanganPending, [pegawaiId]);
+    return rows;
+  },
+
   getPendingNotifications: async () => {
     const [rows] = await pool.execute(dashboardQueries.getPendingNotifications);
     return rows;

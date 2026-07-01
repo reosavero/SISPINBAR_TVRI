@@ -14,6 +14,34 @@ const dashboardController = {
     }
   },
 
+  // Pegawai dashboard stats
+  getPegawaiStats: async (req, res) => {
+    try {
+      if (!req.user.pegawai_id) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak' });
+      }
+      const result = await dashboardService.getPegawaiStats(req.user.pegawai_id);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Pegawai recent peminjaman
+  getPegawaiRecentPeminjaman: async (req, res) => {
+    try {
+      if (!req.user.pegawai_id) {
+        return res.status(403).json({ success: false, message: 'Akses ditolak' });
+      }
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 5;
+      const result = await dashboardService.getPegawaiRecentPeminjaman(req.user.pegawai_id, page, limit);
+      res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
   getMonthlyLoans: async (req, res) => {
     try {
       const result = await dashboardService.getMonthlyLoans(req.query.year);

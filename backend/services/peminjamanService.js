@@ -6,6 +6,8 @@ const pool = require('../config/db');
 const peminjamanQueries = require('../queries/peminjamanQueries');
 const { paginate } = require('../utils/helpers');
 const { updateBarangStatus } = require('./barangService');
+const auditService = require('./auditService');
+const notificationService = require('./notificationService');
 
 const peminjamanService = {
   getAll: async (params = {}) => {
@@ -123,21 +125,73 @@ const peminjamanService = {
     return { id: result.insertId, nomor_peminjaman: nomor, ...data };
   },
 
-  approve: async (id) => {
+  approve: async (id, user) => {
     const [rows] = await pool.execute(peminjamanQueries.getById, [id]);
     if (!rows[0]) throw new Error('Peminjaman tidak ditemukan');
     if (rows[0].status !== 'Menunggu Persetujuan') throw new Error('Peminjaman tidak dapat disetujui');
     await pool.execute(peminjamanQueries.approve, [id]);
+
+    // Update barang status
+    await updateBarangStatus(rows[0].barang_id);
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'APPROVE',
+      module: 'peminjaman',
+      recordId: id,
+      details: { nomor_peminjaman: rows[0].nomor_peminjaman },
+      ipAddress: user?.ip,
+    });
+
+    // Notification to pegawai
+    if (rows[0].pegawai_id) {
+      await notificationService.create({
+        pegawaiId: rows[0].pegawai_id,
+        title: 'Peminjaman Disetujui',
+        message: `Peminjaman ${rows[0].nomor_peminjaman} telah disetujui`,
+        type: 'success',
+        module: 'peminjaman',
+        recordId: id,
+      });
+    }
+
     return { id, status: 'Dipinjam' };
   },
 
-  reject: async (id) => {
-    const peminjaman = await peminjamanService.getById(id);
+  reject: async (id, user) => {
+    const [rows] = await pool.execute(peminjamanQueries.getById, [id]);
+    const peminjaman = rows[0];
+    if (!peminjaman) throw new Error('Peminjaman tidak ditemukan');
     await pool.execute(peminjamanQueries.reject, [id]);
 
     // Update barang status based on available units
     if (peminjaman) {
       await updateBarangStatus(peminjaman.barang_id);
+    }
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'REJECT',
+      module: 'peminjaman',
+      recordId: id,
+      details: { nomor_peminjaman: peminjaman.nomor_peminjaman },
+      ipAddress: user?.ip,
+    });
+
+    // Notification to pegawai
+    if (peminjaman.pegawai_id) {
+      await notificationService.create({
+        pegawaiId: peminjaman.pegawai_id,
+        title: 'Peminjaman Ditolak',
+        message: `Peminjaman ${peminjaman.nomor_peminjaman} telah ditolak`,
+        type: 'danger',
+        module: 'peminjaman',
+        recordId: id,
+      });
     }
 
     return { id, status: 'Ditolak' };

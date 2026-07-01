@@ -63,7 +63,7 @@ const peminjamanController = {
 
   approve: async (req, res) => {
     try {
-      const result = await peminjamanService.approve(req.params.id);
+      const result = await peminjamanService.approve(req.params.id, { id: req.user.id, username: req.user.username, ip: req.ip });
       res.json({ success: true, data: result, message: 'Peminjaman berhasil disetujui' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -72,7 +72,7 @@ const peminjamanController = {
 
   reject: async (req, res) => {
     try {
-      const result = await peminjamanService.reject(req.params.id);
+      const result = await peminjamanService.reject(req.params.id, { id: req.user.id, username: req.user.username, ip: req.ip });
       res.json({ success: true, data: result, message: 'Peminjaman berhasil ditolak' });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });

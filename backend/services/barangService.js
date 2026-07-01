@@ -5,6 +5,7 @@
 const pool = require('../config/db');
 const barangQueries = require('../queries/barangQueries');
 const { paginate } = require('../utils/helpers');
+const auditService = require('./auditService');
 
 // Update barang status based on available units
 const updateBarangStatus = async (barangId) => {
@@ -77,7 +78,7 @@ const barangService = {
     return rows.map(row => ({ ...row, tersedia: Number(row.tersedia) }));
   },
 
-  create: async (data) => {
+  create: async (data, user) => {
     const {
       kode_barang, nama_barang, kategori_id, lokasi,
       kondisi, status, deskripsi, jumlah, foto,
@@ -87,10 +88,22 @@ const barangService = {
       kondisi || 'Baik', status || 'Tersedia',
       deskripsi || null, jumlah || 1, foto || null,
     ]);
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'CREATE',
+      module: 'barang',
+      recordId: result.insertId,
+      details: { nama_barang, kode_barang },
+      ipAddress: user?.ip,
+    });
+
     return { id: result.insertId, ...data };
   },
 
-  update: async (id, data) => {
+  update: async (id, data, user) => {
     const {
       nama_barang, kategori_id, lokasi, kondisi,
       status, deskripsi, jumlah, foto,
@@ -113,6 +126,18 @@ const barangService = {
     }
     updateFields.push(id);
     await pool.execute(barangQueries.update, updateFields);
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'UPDATE',
+      module: 'barang',
+      recordId: id,
+      details: { nama_barang, status },
+      ipAddress: user?.ip,
+    });
+
     return { id, ...data };
   },
 
@@ -121,8 +146,21 @@ const barangService = {
     return { id, foto };
   },
 
-  delete: async (id) => {
-    await pool.execute(barangQueries.delete, [id]);
+  delete: async (id, user) => {
+    // Soft delete — set deleted_at instead of actually deleting
+    await pool.execute(barangQueries.softDelete, [id]);
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'DELETE',
+      module: 'barang',
+      recordId: id,
+      details: { method: 'soft_delete' },
+      ipAddress: user?.ip,
+    });
+
     return { id };
   },
 };

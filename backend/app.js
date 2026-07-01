@@ -1,5 +1,6 @@
 // ============================================
 // APP - Sistem Peminjaman Barang TVRI
+// (Updated: new routes for export, notification, perpanjangan, audit)
 // ============================================
 
 const express = require('express');
@@ -17,6 +18,10 @@ const peminjamanRoutes = require('./routes/peminjamanRoutes');
 const pengembalianRoutes = require('./routes/pengembalianRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
 const riwayatRoutes = require('./routes/riwayatRoutes');
+const exportRoutes = require('./routes/exportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const perpanjanganRoutes = require('./routes/perpanjanganRoutes');
+const auditRoutes = require('./routes/auditRoutes');
 
 // Middleware
 const { auth, authorize } = require('./middleware/auth');
@@ -62,6 +67,10 @@ app.use('/api/peminjaman', peminjamanRoutes);
 app.use('/api/pengembalian', pengembalianRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/riwayat', riwayatRoutes);
+app.use('/api/export', exportRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/perpanjangan', perpanjanganRoutes);
+app.use('/api/audit', auditRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

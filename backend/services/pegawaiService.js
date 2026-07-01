@@ -6,6 +6,7 @@ const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const pegawaiQueries = require('../queries/pegawaiQueries');
 const { paginate } = require('../utils/helpers');
+const auditService = require('./auditService');
 
 const pegawaiService = {
   getAll: async (params = {}) => {
@@ -153,7 +154,7 @@ const pegawaiService = {
   },
 
   // ========== DELETE - Hapus pegawai + akun user ==========
-  delete: async (id) => {
+  delete: async (id, user) => {
     // Ambil data pegawai untuk mendapatkan user_id
     const [pegawaiRows] = await pool.execute(pegawaiQueries.getById, [id]);
     if (pegawaiRows.length === 0) {
@@ -163,13 +164,24 @@ const pegawaiService = {
     const pegawai = pegawaiRows[0];
     const userId = pegawai.user_id;
 
-    // Hapus data pegawai
-    await pool.execute(pegawaiQueries.delete, [id]);
+    // Soft delete pegawai — set deleted_at
+    await pool.execute(pegawaiQueries.softDelete, [id]);
 
-    // Hapus akun user terkait
+    // Also disable the linked user account (soft-delete by setting deleted_at if column exists)
     if (userId) {
-      await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
+      await pool.execute(pegawaiQueries.softDeleteUser, [userId]);
     }
+
+    // Audit log
+    await auditService.log({
+      userId: user?.id,
+      username: user?.username,
+      action: 'DELETE',
+      module: 'pegawai',
+      recordId: id,
+      details: { pegawai_nama: pegawai.nama, nip: pegawai.nip, method: 'soft_delete' },
+      ipAddress: user?.ip,
+    });
 
     return { id };
   },
