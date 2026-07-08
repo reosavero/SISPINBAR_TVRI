@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   pegawai_id INT DEFAULT NULL COMMENT 'Untuk notifikasi ke pegawai tertentu',
   title VARCHAR(255) NOT NULL,
   message TEXT DEFAULT NULL,
-  type ENUM('info', 'success', 'warning', 'danger') DEFAULT 'info',
+  type ENUM('info', 'success', 'warning', 'danger', 'peminjaman', 'pengembalian', 'persetujuan', 'penolakan') DEFAULT 'info',
   module VARCHAR(50) DEFAULT NULL,
   record_id INT DEFAULT NULL,
   is_read TINYINT(1) DEFAULT 0,

@@ -1,57 +1,61 @@
 // ============================================
 // PEGAWAI QUERIES - Sistem Peminjaman Barang TVRI
-// (Updated: soft delete support)
+// Now using users table directly (pegawai merged into users)
 // ============================================
 
 const pegawaiQueries = {
   getAll: `
-    SELECT p.*, u.username, u.email AS user_email, u.role AS user_role
-    FROM pegawai p
-    LEFT JOIN users u ON p.user_id = u.id
-    WHERE p.deleted_at IS NULL
-    AND (? IS NULL OR p.nama LIKE CONCAT('%', ?, '%'))
-    AND (? IS NULL OR p.divisi = ?)
-    ORDER BY p.nama ASC
-    LIMIT ? OFFSET ?
+    SELECT id, username, nama, nip, jabatan, divisi, email, nomor_hp, role, is_active, registration_status
+    FROM users
+    WHERE role = 'pegawai' AND registration_status = 'approved' AND deleted_at IS NULL
+    ORDER BY nama ASC
   `,
 
-  countAll: `
-    SELECT COUNT(*) AS total FROM pegawai
-    WHERE deleted_at IS NULL
-    AND (? IS NULL OR nama LIKE CONCAT('%', ?, '%'))
-    AND (? IS NULL OR divisi = ?)
+  getAllCount: `
+    SELECT COUNT(*) AS total FROM users WHERE role = 'pegawai' AND registration_status = 'approved' AND deleted_at IS NULL
   `,
 
   getById: `
-    SELECT p.*, u.username, u.email AS user_email, u.role AS user_role
-    FROM pegawai p
-    LEFT JOIN users u ON p.user_id = u.id
-    WHERE p.id = ? AND p.deleted_at IS NULL
+    SELECT id, username, nama, nip, jabatan, divisi, email, nomor_hp, role, is_active, registration_status, avatar
+    FROM users
+    WHERE id = ? AND role = 'pegawai'
   `,
 
   getByUserId: `
-    SELECT p.*, u.username, u.email AS user_email, u.role AS user_role
-    FROM pegawai p
-    LEFT JOIN users u ON p.user_id = u.id
-    WHERE p.user_id = ?
+    SELECT id, username, nama, nip, jabatan, divisi, email, nomor_hp, role, is_active, registration_status, avatar
+    FROM users
+    WHERE id = ? AND role = 'pegawai'
   `,
 
   create: `
-    INSERT INTO pegawai (user_id, nip, nama, jabatan, divisi, email, nomor_hp)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (username, email, password, nama, role, nip, jabatan, divisi, nomor_hp, is_active, registration_status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved')
   `,
 
   update: `
-    UPDATE pegawai SET nip = ?, nama = ?, jabatan = ?, divisi = ?, email = ?, nomor_hp = ?
+    UPDATE users SET nip = ?, nama = ?, jabatan = ?, divisi = ?, email = ?, nomor_hp = ?, updated_at = NOW()
     WHERE id = ?
   `,
 
-  softDelete: `UPDATE pegawai SET deleted_at = NOW() WHERE id = ?`,
+  // Check if pegawai has active peminjaman
+  hasActivePeminjaman: `
+    SELECT COUNT(*) AS count
+    FROM peminjaman
+    WHERE pegawai_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi')
+  `,
 
-  // Also soft-delete the linked user account
-  softDeleteUser: `UPDATE users SET updated_at = NOW() WHERE id = ?`,
+  // Nullify pegawai_id on ALL peminjaman records
+  nullifyPeminjamanPegawai: `
+    UPDATE peminjaman SET pegawai_id = NULL WHERE pegawai_id = ?
+  `,
 
-  delete: `DELETE FROM pegawai WHERE id = ?`,
+  // Nullify user_id on audit_log records referencing the user being deleted
+  nullifyAuditLogUser: `
+    UPDATE audit_log SET user_id = NULL WHERE user_id = ?
+  `,
+
+  // Hard delete user (pegawai)
+  hardDeleteUser: `DELETE FROM users WHERE id = ?`,
 
   // Check if username exists
   checkUsername: `SELECT id FROM users WHERE username = ?`,
@@ -60,7 +64,7 @@ const pegawaiQueries = {
   checkEmail: `SELECT id FROM users WHERE email = ?`,
 
   // Check if NIP exists
-  checkNip: `SELECT id FROM pegawai WHERE nip = ? AND id != ?`,
+  checkNip: `SELECT id FROM users WHERE nip = ? AND id != ?`,
 };
 
 module.exports = pegawaiQueries;

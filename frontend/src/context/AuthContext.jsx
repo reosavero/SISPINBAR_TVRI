@@ -1,6 +1,9 @@
 // ============================================
 // AUTH CONTEXT - Sistem Peminjaman Barang TVRI
+// Updated: Super Admin Role System (3 roles)
 // ============================================
+// Menggunakan sessionStorage agar session otomatis hilang
+// saat browser ditutup atau tab baru dibuka (harus login ulang)
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
@@ -22,13 +25,12 @@ export const AuthProvider = ({ children }) => {
   // Verifikasi token saat app pertama kali load
   useEffect(() => {
     const verifyAuth = async () => {
-      const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
+      const token = sessionStorage.getItem('token');
+      const savedUser = sessionStorage.getItem('user');
 
       if (!token || !savedUser) {
-        // Tidak ada session → pastikan bersih
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         setUser(null);
         setLoading(false);
         return;
@@ -39,8 +41,8 @@ export const AuthProvider = ({ children }) => {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser); // Set sementara agar loading screen tidak terlalu lama
       } catch {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         setUser(null);
         setLoading(false);
         return;
@@ -50,26 +52,26 @@ export const AuthProvider = ({ children }) => {
       try {
         const res = await api.get('/auth/profile');
         if (res.data.success) {
-          // Token valid → update user data terbaru dari server
           const userData = res.data.data;
           setUser(userData);
-          localStorage.setItem('user', JSON.stringify(userData));
+          sessionStorage.setItem('user', JSON.stringify(userData));
         } else {
-          // Response tidak sukses → hapus session
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
           setUser(null);
         }
       } catch (err) {
         const status = err.response?.status;
         if (status === 401 || status === 403) {
-          // Token expired / invalid → hapus session
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          setUser(null);
+        } else {
+          // Server tidak bisa dijangkau → Token tidak bisa diverifikasi, hapus session
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
           setUser(null);
         }
-        // Jika server error (500, network error) → tetap pakai data localStorage
-        // User bisa tetap menggunakan app, nanti dicoba lagi
       } finally {
         setLoading(false);
       }
@@ -81,8 +83,8 @@ export const AuthProvider = ({ children }) => {
   // Listen untuk event auth-expired dari API interceptor
   useEffect(() => {
     const handleAuthExpired = () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       setUser(null);
     };
 
@@ -97,7 +99,7 @@ export const AuthProvider = ({ children }) => {
       if (res.data.success) {
         const userData = res.data.data;
         setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('user', JSON.stringify(userData));
         return userData;
       }
     } catch {
@@ -111,8 +113,8 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await api.post('/auth/login', { username, password });
       const { token, user: userData } = response.data.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return { success: true, role: userData.role, user: userData };
     } catch (error) {
@@ -124,8 +126,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
 
@@ -133,14 +135,23 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => {
       if (!prev) return prev;
       const updated = { ...prev, avatar: avatarPath };
-      localStorage.setItem('user', JSON.stringify(updated));
+      sessionStorage.setItem('user', JSON.stringify(updated));
       return updated;
     });
   };
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === 'admin';
-  const isPegawai = !!user?.pegawai_id;
+
+  // ========== Role Checks ==========
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const isPegawai = user?.role === 'pegawai';
+
+  // Specific role name for display
+  const roleName = user?.role === 'super_admin' ? 'Super Admin'
+    : user?.role === 'admin' ? 'Admin'
+    : user?.role === 'pegawai' ? 'Pegawai'
+    : '';
 
   const value = {
     user,
@@ -148,8 +159,10 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     isAuthenticated,
+    isSuperAdmin,
     isAdmin,
     isPegawai,
+    roleName,
     refreshProfile,
     updateAvatar,
   };

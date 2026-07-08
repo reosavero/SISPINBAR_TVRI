@@ -9,9 +9,9 @@ const pengembalianController = {
     try {
       const params = { ...req.query };
 
-      // Jika pegawai (bukan admin), hanya tampilkan pengembalian miliknya
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        params.pegawai_id = req.user.pegawai_id;
+      // Pegawai hanya bisa melihat pengembalian miliknya sendiri
+      if (req.user.role === 'pegawai') {
+        params.pegawai_id = req.user.id;
       }
 
       const result = await pengembalianService.getAll(params);
@@ -19,6 +19,29 @@ const pengembalianController = {
     } catch (error) {
       console.error('Get pengembalian error:', error.message);
       res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Get detail pengembalian by ID
+  getById: async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'ID tidak valid' });
+      }
+
+      const result = await pengembalianService.getById(id);
+
+      // Pegawai hanya bisa melihat pengembalian miliknya sendiri
+      if (req.user.role === 'pegawai' && result.pegawai_id !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk melihat pengembalian ini' });
+      }
+
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error('Get pengembalian detail error:', error.message);
+      res.status(error.message.includes('tidak ditemukan') ? 404 : 500)
+         .json({ success: false, message: error.message });
     }
   },
 
@@ -47,8 +70,67 @@ const pengembalianController = {
       const statusCode = error.message.includes('tidak ditemukan') ||
                          error.message.includes('tidak dapat dikembalikan') ||
                          error.message.includes('sudah dikembalikan') ||
-                         error.message.includes('masih menunggu') ? 400 : 500;
+                         error.message.includes('masih menunggu') ||
+                         error.message.includes('menunggu konfirmasi') ? 400 : 500;
       res.status(statusCode).json({ success: false, message: error.message });
+    }
+  },
+
+  // Admin mengkonfirmasi barang telah diterima
+  confirm: async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'ID tidak valid' });
+      }
+
+      const result = await pengembalianService.confirm(id, req.user);
+      res.json({ success: true, data: result, message: 'Pengembalian berhasil dikonfirmasi' });
+    } catch (error) {
+      console.error('Confirm pengembalian error:', error.message);
+      res.status(error.message.includes('tidak ditemukan') || error.message.includes('sudah dikonfirmasi') ? 400 : 500)
+         .json({ success: false, message: error.message });
+    }
+  },
+
+  // Admin menolak pengembalian
+  reject: async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: 'ID tidak valid' });
+      }
+
+      const { catatan_admin } = req.body || {};
+      const result = await pengembalianService.reject(id, catatan_admin, { id: req.user.id, username: req.user.username, ip: req.ip });
+      res.json({ success: true, data: result, message: 'Pengembalian berhasil ditolak' });
+    } catch (error) {
+      console.error('Reject pengembalian error:', error.message);
+      const statusCode = error.message.includes('tidak ditemukan') || error.message.includes('sudah') ? 400 : 500;
+      res.status(statusCode).json({ success: false, message: error.message });
+    }
+  },
+
+  // Admin menyetujui semua pengembalian sekaligus (bulk confirm)
+  bulkConfirm: async (req, res) => {
+    try {
+      const { ids } = req.body;
+      if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ success: false, message: 'Pilih minimal satu pengembalian' });
+      }
+
+      const results = await pengembalianService.bulkConfirm(ids, req.user);
+      const successCount = results.filter(r => r.success).length;
+      const failCount = results.filter(r => !r.success).length;
+
+      res.json({
+        success: true,
+        message: `${successCount} pengembalian berhasil dikonfirmasi${failCount > 0 ? `, ${failCount} gagal` : ''}`,
+        data: results,
+      });
+    } catch (error) {
+      console.error('Bulk confirm pengembalian error:', error.message);
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 };

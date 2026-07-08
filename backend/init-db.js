@@ -65,9 +65,13 @@ async function initDatabase() {
 
     console.log('\n🎉 Database initialization complete!');
     console.log('📊 You can now start the server with: npm run dev\n');
-    console.log('🔑 Admin login:');
-    console.log('   Username: admin');
-    console.log('   Password: admin123\n');
+    console.log('🔑 Login credentials:');
+    console.log('   Super Admin:');
+    console.log('      Username: superadmin');
+    console.log('      Password: superadmin123');
+    console.log('   Admin:');
+    console.log('      Username: admin');
+    console.log('      Password: admin123\n');
     console.log('⚠️  Note: Data pegawai yang sudah ada TIDAK terhapus.');
   } catch (error) {
     console.error('❌ Database initialization failed:', error.message);

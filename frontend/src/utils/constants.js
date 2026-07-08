@@ -1,5 +1,6 @@
 // ============================================
 // CONSTANTS - Sistem Peminjaman Barang TVRI
+// Updated: Super Admin Role System (3 roles)
 // ============================================
 
 export const APP_NAME = 'SISPINBAR';
@@ -76,24 +77,98 @@ export const JABATAN = [
   'Supervisor',
 ];
 
-export const LOKASI = [
-  'Gudang Utama',
-  'Studio A',
-  'Studio B',
-  'Rangkaian Produksi',
-  'Ruang IT',
-  'Ruang Berita',
-  'Ruang Editing',
-  'Lantai 2',
-  'Lantai 3',
-  'Outdoor Kit',
-];
+export const STATUS_LOKASI = {
+  AKTIF: 'Aktif',
+  TIDAK_AKTIF: 'Tidak Aktif',
+};
 
 export const ROLES = {
+  SUPER_ADMIN: 'super_admin',
   ADMIN: 'admin',
-  OPERATOR: 'operator',
-  VIEWER: 'viewer',
+  PEGAWAI: 'pegawai',
 };
+
+export const ROLE_LABELS = {
+  super_admin: 'Super Admin',
+  admin: 'Admin',
+  pegawai: 'Pegawai',
+};
+
+export const ROLE_COLORS = {
+  super_admin: {
+    bg: 'bg-red-100',
+    text: 'text-red-700',
+    border: 'border-red-200',
+    dot: 'bg-red-500',
+  },
+  admin: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+    dot: 'bg-blue-500',
+  },
+  pegawai: {
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+};
+
+// ========== SIDEBAR MENUS ==========
+
+export const SIDEBAR_MENU_SUPER_ADMIN = [
+  {
+    label: 'Dashboard',
+    path: '/dashboard',
+    icon: 'MdDashboard',
+  },
+  {
+    label: 'Manajemen User',
+    path: '/manajemen-user',
+    icon: 'MdAdminPanelSettings',
+  },
+  {
+    label: 'Barang',
+    path: '/barang',
+    icon: 'MdInventory2',
+  },
+  {
+    label: 'Kategori',
+    path: '/kategori',
+    icon: 'MdCategory',
+  },
+  {
+    label: 'Kelola Lokasi',
+    path: '/lokasi',
+    icon: 'MdLocationOn',
+  },
+  {
+    label: 'Peminjaman',
+    path: '/peminjaman',
+    icon: 'MdAssignment',
+  },
+  {
+    label: 'Pengembalian',
+    path: '/pengembalian',
+    icon: 'MdAssignmentTurnedIn',
+  },
+  {
+    label: 'Riwayat',
+    path: '/riwayat',
+    icon: 'MdHistory',
+  },
+  {
+    label: 'Activity Log',
+    path: '/activity-log',
+    icon: 'MdTrackChanges',
+  },
+  {
+    label: 'System Settings',
+    path: '/settings',
+    icon: 'MdSettings',
+  },
+];
 
 export const SIDEBAR_MENU_ADMIN = [
   {
@@ -107,9 +182,19 @@ export const SIDEBAR_MENU_ADMIN = [
     icon: 'MdCategory',
   },
   {
+    label: 'Kelola Lokasi',
+    path: '/lokasi',
+    icon: 'MdLocationOn',
+  },
+  {
     label: 'Pegawai',
     path: '/pegawai',
     icon: 'MdPeople',
+  },
+  {
+    label: 'Barang',
+    path: '/barang',
+    icon: 'MdInventory2',
   },
   {
     label: 'Peminjaman',
@@ -140,7 +225,7 @@ export const SIDEBAR_MENU_PEGAWAI = [
     icon: 'MdAssignmentTurnedIn',
   },
   {
-    label: 'Riwayat',
+    label: 'Riwayat Saya',
     path: '/riwayat',
     icon: 'MdHistory',
   },

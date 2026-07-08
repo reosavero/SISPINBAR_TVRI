@@ -39,6 +39,9 @@ const barangController = {
       const result = await barangService.create(data, req.user);
       res.status(201).json({ success: true, data: result, message: 'Barang berhasil ditambahkan' });
     } catch (error) {
+      if (error.code === 'DUPLICATE_NAME') {
+        return res.status(409).json({ success: false, message: error.message });
+      }
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -49,6 +52,9 @@ const barangController = {
       const result = await barangService.update(req.params.id, data, req.user);
       res.json({ success: true, data: result, message: 'Barang berhasil diperbarui' });
     } catch (error) {
+      if (error.code === 'DUPLICATE_NAME') {
+        return res.status(409).json({ success: false, message: error.message });
+      }
       res.status(500).json({ success: false, message: error.message });
     }
   },

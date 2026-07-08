@@ -2,19 +2,21 @@
 // PEGAWAI PAGE - Sistem Peminjaman Barang TVRI
 // ============================================
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiMail, FiPhone, FiUser, FiLock, FiCheck } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiMail, FiPhone, FiUser, FiLock, FiCheck, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
 import { MdPeople } from 'react-icons/md';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { DIVISI, JABATAN } from '../../utils/constants';
-import { getInitials } from '../../utils/format';
+import { getInitials, getAvatarUrl } from '../../utils/format';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Pegawai = () => {
+  const { user: currentUser } = useAuth();
   const [pegawai, setPegawai] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -37,7 +39,85 @@ const Pegawai = () => {
   // Reset password (dalam modal edit)
   const [resetPassword, setResetPassword] = useState({ enabled: false, newPassword: '', confirmPassword: '' });
 
+  // Multi-step add form
+  const [addStep, setAddStep] = useState(1); // 1=Data, 2=Verifikasi OTP, 3=Akun Login
+  const [imgErrors, setImgErrors] = useState(new Set());
+  const [otpCode, setOtpCode] = useState('');
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpVerifying, setOtpVerifying] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const otpRefs = useRef([]);
+
+  // Pending registrations (admin only)
+  const [pendingUsers, setPendingUsers] = useState([]);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectingUser, setRejectingUser] = useState(null);
+
   useEffect(() => { fetchPegawai(); }, [currentPage, search]);
+
+  // Fetch pending registrations (admin+)
+  useEffect(() => {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+      fetchPending();
+    }
+  }, [currentUser]);
+
+  const fetchPending = async () => {
+    try {
+      const res = await api.get('/users/pending');
+      if (res.data.success) setPendingUsers(res.data.data || []);
+    } catch (err) { /* silently fail */ }
+  };
+
+  const handleApprove = async (userId) => {
+    try {
+      const res = await api.put(`/users/${userId}/approve`);
+      const emailNotif = res.data.emailNotif;
+      if (emailNotif?.sent) {
+        toast.success('Registrasi disetujui. Notifikasi email berhasil dikirim');
+      } else if (emailNotif && !emailNotif.sent) {
+        toast.success('Registrasi disetujui, tapi email notifikasi gagal dikirim');
+      } else {
+        toast.success('Registrasi berhasil disetujui');
+      }
+      fetchPending();
+      fetchPegawai();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal menyetujui registrasi');
+    }
+  };
+
+  const handleReject = async () => {
+    try {
+      const res = await api.put(`/users/${rejectingUser.id}/reject`, { reason: rejectReason });
+      const emailNotif = res.data.emailNotif;
+      if (emailNotif?.sent) {
+        toast.success('Registrasi ditolak. Notifikasi email berhasil dikirim');
+      } else if (emailNotif && !emailNotif.sent) {
+        toast.success('Registrasi ditolak, tapi email notifikasi gagal dikirim');
+      } else {
+        toast.success('Registrasi berhasil ditolak');
+      }
+      setShowRejectModal(false);
+      setRejectingUser(null);
+      setRejectReason('');
+      fetchPending();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal menolak registrasi');
+    }
+  };
+
+  const handleAvatarError = (userId) => {
+    setImgErrors(prev => {
+      const next = new Set(prev);
+      next.add(userId);
+      return next;
+    });
+  };
 
   const fetchPegawai = async () => {
     setLoading(true);
@@ -61,6 +141,13 @@ const Pegawai = () => {
     setEditItem(null);
     setForm({ nip: '', nama: '', jabatan: '', divisi: '', email: '', nomor_hp: '', username: '', password: '' });
     setResetPassword({ enabled: false, newPassword: '', confirmPassword: '' });
+    setAddStep(1);
+    setOtpCode('');
+    setOtpSent(false);
+    setOtpCooldown(0);
+    setOtpVerified(false);
+    setOtpVerifying(false);
+    setOtpError('');
     setShowModal(true);
   };
 
@@ -80,51 +167,114 @@ const Pegawai = () => {
     setShowModal(true);
   };
 
+  // ========== STEP VALIDATION ==========
+  const validateStep1 = () => {
+    if (!form.nama.trim()) { toast.error('Nama wajib diisi'); return false; }
+    if (!form.nip.trim()) { toast.error('NIP wajib diisi'); return false; }
+    if (!form.email.trim()) { toast.error('Email wajib diisi'); return false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) { toast.error('Format email tidak valid'); return false; }
+    return true;
+  };
+
+  const validateStep3 = () => {
+    if (!form.username.trim()) { toast.error('Username wajib diisi'); return false; }
+    if (form.username.length < 3) { toast.error('Username minimal 3 karakter'); return false; }
+    if (!form.password) { toast.error('Password wajib diisi'); return false; }
+    if (form.password.length < 6) { toast.error('Password minimal 6 karakter'); return false; }
+    return true;
+  };
+
+  // ========== OTP HANDLERS ==========
+  const handleSendOtp = async () => {
+    if (!form.email.trim()) { toast.error('Email wajib diisi terlebih dahulu'); return; }
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const res = await api.post('/pegawai/send-otp', { email: form.email.trim() });
+      if (res.data.success) {
+        setOtpSent(true);
+        toast.success('Kode verifikasi telah dikirim ke email pegawai');
+        setOtpCooldown(60);
+        const interval = setInterval(() => {
+          setOtpCooldown(prev => {
+            if (prev <= 1) { clearInterval(interval); return 0; }
+            return prev - 1;
+          });
+        }, 1000);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mengirim kode verifikasi');
+    }
+    setOtpLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otpCode || otpCode.length !== 6) { setOtpError('Masukkan 6 digit kode verifikasi'); return; }
+    setOtpVerifying(true);
+    setOtpError('');
+    try {
+      const res = await api.post('/pegawai/verify-otp', { email: form.email.trim(), otp: otpCode });
+      if (res.data.success) {
+        setOtpVerified(true);
+        toast.success('Email berhasil diverifikasi!');
+      }
+    } catch (err) {
+      setOtpError(err.response?.data?.message || 'Kode verifikasi salah');
+    }
+    setOtpVerifying(false);
+  };
+
+  const handleNextStep = () => {
+    if (addStep === 1) {
+      if (!validateStep1()) return;
+      setAddStep(2);
+      // Auto-send OTP when moving to step 2
+      if (!otpSent) {
+        setTimeout(() => handleSendOtp(), 300);
+      }
+    } else if (addStep === 2) {
+      if (!otpVerified) { toast.error('Verifikasi email terlebih dahulu'); return; }
+      setAddStep(3);
+    }
+  };
+
+  // ========== SUBMIT (CREATE PEGAWAI) ==========
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.nama || !form.nip) { toast.error('NIP dan Nama wajib diisi'); return; }
+    if (e) e.preventDefault();
 
-    // Validasi untuk pegawai baru
-    if (!editItem) {
-      if (!form.username) { toast.error('Username wajib diisi untuk pegawai baru'); return; }
-      if (!form.password) { toast.error('Password wajib diisi untuk pegawai baru'); return; }
-      if (form.password.length < 6) { toast.error('Password minimal 6 karakter'); return; }
-      if (form.username.length < 3) { toast.error('Username minimal 3 karakter'); return; }
+    // Edit mode
+    if (editItem) {
+      if (!form.nama || !form.nip) { toast.error('NIP dan Nama wajib diisi'); return; }
+      if (resetPassword.enabled) {
+        if (!resetPassword.newPassword) { toast.error('Password baru wajib diisi'); return; }
+        if (resetPassword.newPassword.length < 6) { toast.error('Password baru minimal 6 karakter'); return; }
+        if (resetPassword.newPassword !== resetPassword.confirmPassword) { toast.error('Konfirmasi password tidak cocok'); return; }
+      }
+
+      setSaving(true);
+      try {
+        const updateData = { ...form };
+        if (!updateData.password) delete updateData.password;
+        if (resetPassword.enabled) updateData.password = resetPassword.newPassword;
+        await api.put(`/pegawai/${editItem.id}`, updateData);
+        toast.success(resetPassword.enabled ? 'Pegawai dan password berhasil diperbarui' : 'Pegawai berhasil diperbarui');
+        setShowModal(false);
+        fetchPegawai();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Terjadi kesalahan. Silakan coba lagi.');
+      }
+      setSaving(false);
+      return;
     }
 
-    // Validasi reset password jika diaktifkan
-    if (editItem && resetPassword.enabled) {
-      if (!resetPassword.newPassword) { toast.error('Password baru wajib diisi'); return; }
-      if (resetPassword.newPassword.length < 6) { toast.error('Password baru minimal 6 karakter'); return; }
-      if (resetPassword.newPassword !== resetPassword.confirmPassword) { toast.error('Konfirmasi password tidak cocok'); return; }
-    }
+    // Add mode - final step
+    if (!validateStep3()) return;
+    if (!otpVerified) { toast.error('Email belum diverifikasi'); return; }
 
     setSaving(true);
     try {
-      if (editItem) {
-        // Edit pegawai
-        const updateData = { ...form };
-        if (!updateData.password) delete updateData.password;
-
-        // Jika reset password diaktifkan, kirim password baru
-        if (resetPassword.enabled) {
-          updateData.password = resetPassword.newPassword;
-        }
-
-        await api.put(`/pegawai/${editItem.id}`, updateData);
-
-        // Reset password via endpoint terpisah jika diaktifkan
-        // (sudah include di updateData.password di atas)
-
-        toast.success(resetPassword.enabled
-          ? 'Pegawai dan password berhasil diperbarui'
-          : 'Pegawai berhasil diperbarui'
-        );
-      } else {
-        // Tambah baru
-        await api.post('/pegawai', form);
-        toast.success('Pegawai berhasil ditambahkan. Akun login telah dibuat.');
-      }
+      await api.post('/pegawai', form);
+      toast.success('Pegawai berhasil ditambahkan. Akun login telah dibuat.');
       setShowModal(false);
       fetchPegawai();
     } catch (err) {
@@ -142,6 +292,7 @@ const Pegawai = () => {
     }
     setShowDelete(false);
     fetchPegawai();
+    fetchPending();
   };
 
   const divisiColors = {
@@ -166,6 +317,60 @@ const Pegawai = () => {
           <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Cari pegawai..." className="input-field pl-10" />
         </div>
       </div>
+
+      {/* Pending Registration Approval (admin only) */}
+      {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && pendingUsers.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-5 mb-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+              <FiClock className="w-4 h-4 text-amber-600" />
+            </div>
+            <h3 className="text-sm font-bold text-amber-800">Registrasi Menunggu Persetujuan ({pendingUsers.length})</h3>
+          </div>
+          <div className="space-y-2">
+            {pendingUsers.map((user) => (
+              <div key={user.id} className="bg-white rounded-xl p-3 sm:p-4 border border-amber-100">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-amber-400 to-amber-600">
+                      {user.avatar && !imgErrors.has(user.id) ? (
+                        <img key={user.id} src={getAvatarUrl(user.avatar)} alt="" className="w-full h-full object-cover" onError={() => handleAvatarError(user.id)} />
+                      ) : (
+                        <span className="text-white text-sm font-bold">{getInitials(user.nama)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className="text-sm font-semibold text-gray-800 truncate">{user.nama}</p>
+                        {user.email && <span className="text-[10px] px-1.5 py-0.5 bg-gray-50 text-gray-500 rounded truncate max-w-[160px]">{user.email}</span>}
+                      </div>
+                      <p className="text-xs text-gray-400">@{user.username} · NIP: {user.nip || '-'}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {user.jabatan && <span className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded">{user.jabatan}</span>}
+                        {user.divisi && <span className="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded">{user.divisi}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleApprove(user.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500 text-white hover:bg-emerald-600 transition-colors touch-manipulation"
+                    >
+                      <FiCheckCircle className="w-3.5 h-3.5" /> Setujui
+                    </button>
+                    <button
+                      onClick={() => { setRejectingUser(user); setShowRejectModal(true); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-500 text-white hover:bg-red-600 transition-colors touch-manipulation"
+                    >
+                      <FiXCircle className="w-3.5 h-3.5" /> Tolak
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Info Banner + Tambah Pegawai */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
@@ -321,221 +526,394 @@ const Pegawai = () => {
 
       {/* ========== MODAL TAMBAH/EDIT PEGAWAI ========== */}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Pegawai' : 'Tambah Pegawai Baru'} size="lg">
-        <form onSubmit={handleSubmit}>
-          {/* Section: Data Login */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
-                <FiLock className="w-3.5 h-3.5 text-[#005BAC]" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-800">Akun Login</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Username {editItem ? '' : <span className="text-red-500">*</span>}
-                </label>
-                <div className="relative">
-                  <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    value={form.username}
-                    onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })}
-                    placeholder="contoh: budi.santoso"
-                    className="input-field pl-10"
-                    required={!editItem}
-                    minLength={3}
-                    disabled={!!editItem}
-                  />
+        {editItem ? (
+          /* ===== EDIT MODE ===== */
+          <form onSubmit={handleSubmit}>
+            {/* Section: Data Login */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
+                  <FiLock className="w-3.5 h-3.5 text-[#005BAC]" />
                 </div>
-                {editItem && <p className="text-xs text-gray-400 mt-1">Username tidak dapat diubah</p>}
+                <h3 className="text-sm font-semibold text-gray-800">Akun Login</h3>
               </div>
-              {!editItem ? (
-                /* Password field untuk TAMBAH BARU */
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Password <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="password"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                      placeholder="Minimal 6 karakter"
-                      className="input-field pl-10"
-                      required
-                      minLength={6}
-                    />
+                    <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input type="text" value={editItem.username} className="input-field pl-10 bg-gray-50 text-gray-500" disabled />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1">Username tidak dapat diubah</p>
                 </div>
-              ) : (
-                /* Saat EDIT: toggle reset password */
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
                   <div className="flex items-center gap-3 mt-1">
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={resetPassword.enabled}
-                        onChange={(e) => setResetPassword({ ...resetPassword, enabled: e.target.checked, newPassword: '', confirmPassword: '' })}
-                        className="sr-only peer"
-                      />
+                      <input type="checkbox" checked={resetPassword.enabled} onChange={(e) => setResetPassword({ ...resetPassword, enabled: e.target.checked, newPassword: '', confirmPassword: '' })} className="sr-only peer" />
                       <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#005BAC]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#005BAC]"></div>
                     </label>
                     <span className="text-sm text-gray-600">Ubah password</span>
                   </div>
                 </div>
+              </div>
+              {resetPassword.enabled && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9 mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Password Baru <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input type="password" value={resetPassword.newPassword} onChange={(e) => setResetPassword({ ...resetPassword, newPassword: e.target.value })} placeholder="Minimal 6 karakter" className="input-field pl-10" minLength={6} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Konfirmasi Password <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input type="password" value={resetPassword.confirmPassword} onChange={(e) => setResetPassword({ ...resetPassword, confirmPassword: e.target.value })} placeholder="Ulangi password baru" className="input-field pl-10" minLength={6} />
+                    </div>
+                    {resetPassword.newPassword && resetPassword.confirmPassword && (
+                      <div className={`flex items-center gap-1.5 text-xs mt-1.5 ${resetPassword.newPassword === resetPassword.confirmPassword ? 'text-emerald-600' : 'text-red-500'}`}>
+                        <FiCheck className="w-3 h-3" />
+                        <span>{resetPassword.newPassword === resetPassword.confirmPassword ? 'Password cocok' : 'Password tidak cocok'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-
-            {/* Password fields saat edit & toggle aktif */}
-            {editItem && resetPassword.enabled && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9 mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+            <div className="border-t border-gray-200 my-5"></div>
+            {/* Section: Data Pribadi */}
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                  <MdPeople className="w-3.5 h-3.5 text-emerald-600" />
+                </div>
+                <h3 className="text-sm font-semibold text-gray-800">Data Pegawai</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Password Baru <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} placeholder="Masukkan NIP" className="input-field" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
+                  <input type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Masukkan nama lengkap" className="input-field" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
+                  <select value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} className="input-field">
+                    <option value="">Pilih jabatan</option>
+                    {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
+                  <select value={form.divisi} onChange={(e) => setForm({ ...form, divisi: e.target.value })} className="input-field">
+                    <option value="">Pilih divisi</option>
+                    {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="password"
-                      value={resetPassword.newPassword}
-                      onChange={(e) => setResetPassword({ ...resetPassword, newPassword: e.target.value })}
-                      placeholder="Minimal 6 karakter"
-                      className="input-field pl-10"
-                      minLength={6}
-                    />
+                    <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="email@gmail.com" className="input-field pl-10" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Konfirmasi Password <span className="text-red-500">*</span>
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Nomor HP</label>
                   <div className="relative">
-                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="password"
-                      value={resetPassword.confirmPassword}
-                      onChange={(e) => setResetPassword({ ...resetPassword, confirmPassword: e.target.value })}
-                      placeholder="Ulangi password baru"
-                      className="input-field pl-10"
-                      minLength={6}
-                    />
+                    <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input type="text" value={form.nomor_hp} onChange={(e) => setForm({ ...form, nomor_hp: e.target.value })} placeholder="08xxxxxxxxxx" className="input-field pl-10" />
                   </div>
-                  {resetPassword.newPassword && resetPassword.confirmPassword && (
-                    <div className={`flex items-center gap-1.5 text-xs mt-1.5 ${resetPassword.newPassword === resetPassword.confirmPassword ? 'text-emerald-600' : 'text-red-500'}`}>
-                      <FiCheck className="w-3 h-3" />
-                      <span>{resetPassword.newPassword === resetPassword.confirmPassword ? 'Password cocok' : 'Password tidak cocok'}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+              <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
+              <Button type="submit" loading={saving}>Simpan Perubahan</Button>
+            </div>
+          </form>
+        ) : (
+          /* ===== ADD MODE - Multi Step ===== */
+          <div className="space-y-5">
+            {/* Step Indicator */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${addStep >= 2 ? 'bg-emerald-100 text-emerald-700' : 'bg-[#005BAC] text-white'}`}>
+                {addStep > 1 && <FiCheckCircle className="w-3.5 h-3.5" />}
+                <span>1. Data</span>
+              </div>
+              <div className={`w-6 h-0.5 ${addStep >= 2 ? 'bg-emerald-400' : 'bg-gray-200'}`} />
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${addStep === 2 ? 'bg-[#005BAC] text-white' : addStep >= 3 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                {addStep >= 3 && <FiCheckCircle className="w-3.5 h-3.5" />}
+                <span>2. Verifikasi</span>
+              </div>
+              <div className={`w-6 h-0.5 ${addStep >= 3 ? 'bg-emerald-400' : 'bg-gray-200'}`} />
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${addStep === 3 ? 'bg-[#005BAC] text-white' : 'bg-gray-100 text-gray-400'}`}>
+                <span>3. Akun</span>
+              </div>
+            </div>
+
+            {/* ===== STEP 1: Data Pegawai ===== */}
+            {addStep === 1 && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <FiMail className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-blue-700">Masukkan data pegawai. Email akan diverifikasi pada langkah berikutnya sebelum akun dibuat.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.nip} onChange={(e) => setForm({ ...form, nip: e.target.value })} placeholder="Masukkan NIP" className="input-field" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
+                    <input type="text" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Masukkan nama lengkap" className="input-field" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
+                    <select value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} className="input-field">
+                      <option value="">Pilih jabatan</option>
+                      {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
+                    <select value={form.divisi} onChange={(e) => setForm({ ...form, divisi: e.target.value })} className="input-field">
+                      <option value="">Pilih divisi</option>
+                      {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input type="email" value={form.email} onChange={(e) => { setForm({ ...form, email: e.target.value }); if (otpVerified) { setOtpVerified(false); setOtpSent(false); setOtpCode(''); } }} placeholder="email@gmail.com" className="input-field pl-10" />
                     </div>
-                  )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Nomor HP</label>
+                    <div className="relative">
+                      <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <input type="text" value={form.nomor_hp} onChange={(e) => setForm({ ...form, nomor_hp: e.target.value })} placeholder="08xxxxxxxxxx" className="input-field pl-10" />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                  <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
+                  <Button onClick={handleNextStep}>Selanjutnya</Button>
+                </div>
+              </div>
+            )}
+
+            {/* ===== STEP 2: Verifikasi Email (OTP) ===== */}
+            {addStep === 2 && (
+              <div className="space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-start gap-3">
+                    <FiMail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-blue-800">Verifikasi Email</p>
+                      <p className="text-xs text-blue-600 mt-1">Kode verifikasi 6 digit telah dikirim ke:</p>
+                      <p className="text-sm font-bold text-blue-800 mt-1 break-all">{form.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-base leading-none mt-0.5">⚠️</span>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      <strong>Tidak menerima kode?</strong> Cek folder <strong>Spam</strong> di email pegawai. Email dari sistem sering masuk ke folder spam.
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Verifikasi</label>
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((i) => (
+                      <input
+                        key={i}
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={1}
+                        value={otpCode[i] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          if (val) {
+                            const newOtp = otpCode.split('');
+                            newOtp[i] = val[val.length - 1];
+                            setOtpCode(newOtp.join(''));
+                            setOtpError('');
+                            if (i < 5) {
+                              const nextInput = e.target.parentElement?.children?.[i + 1];
+                              if (nextInput) nextInput.focus();
+                            }
+                          } else {
+                            const newOtp = otpCode.split('');
+                            newOtp[i] = '';
+                            setOtpCode(newOtp.join(''));
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Backspace' && !otpCode[i] && i > 0) {
+                            const prevInput = e.target.parentElement?.children?.[i - 1];
+                            if (prevInput) prevInput.focus();
+                          }
+                        }}
+                        disabled={otpVerified}
+                        className={`w-12 h-14 text-center text-xl font-bold rounded-xl border-2 focus:outline-none focus:ring-2 transition-all ${
+                          otpVerified ? 'border-emerald-400 bg-emerald-50 text-emerald-700' :
+                          otpError ? 'border-red-300 bg-red-50 text-red-700' :
+                          otpCode[i] ? 'border-[#005BAC] bg-blue-50 text-[#005BAC]' :
+                          'border-gray-200 bg-white text-gray-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  {otpError && <p className="text-xs text-red-500 mt-2">{otpError}</p>}
+                  {otpVerified && <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1"><FiCheckCircle className="w-3.5 h-3.5" /> Email berhasil diverifikasi</p>}
+                </div>
+
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                  <Button variant="outline" onClick={() => { setAddStep(1); setOtpVerified(false); setOtpCode(''); setOtpError(''); }}>Kembali</Button>
+                  <div className="flex items-center gap-3">
+                    {!otpVerified ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={otpCooldown > 0 || otpLoading}
+                          className={`text-xs font-medium transition-colors ${otpCooldown > 0 ? 'text-gray-400 cursor-not-allowed' : 'text-[#005BAC] hover:text-[#003B71]'}`}
+                        >
+                          {otpLoading ? 'Mengirim...' : otpCooldown > 0 ? `Kirim ulang (${otpCooldown}s)` : 'Kirim ulang kode'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={otpCode.length !== 6 || otpVerifying}
+                          className={`px-4 py-2 rounded-xl font-semibold transition-all ${
+                            otpCode.length !== 6 || otpVerifying
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-gradient-to-r from-[#005BAC] to-[#003B71] text-white hover:from-[#006CC4] hover:to-[#004A8F]'
+                          }`}
+                        >
+                          {otpVerifying ? (
+                            <span className="flex items-center gap-2">
+                              <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Memverifikasi...
+                            </span>
+                          ) : 'Verifikasi Kode'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleNextStep}
+                        className="px-4 py-2 rounded-xl font-semibold bg-gradient-to-r from-[#005BAC] to-[#003B71] text-white hover:from-[#006CC4] hover:to-[#004A8F] transition-all"
+                      >
+                        Selanjutnya
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ===== STEP 3: Akun Login ===== */}
+            {addStep === 3 && (
+              <div className="space-y-4">
+                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <FiCheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-emerald-800">Email terverifikasi</p>
+                      <p className="text-xs text-emerald-600 mt-0.5 break-all">{form.email}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-200 my-2"></div>
+
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
+                      <FiLock className="w-3.5 h-3.5 text-[#005BAC]" />
+                    </div>
+                    <h3 className="text-sm font-semibold text-gray-800">Buat Akun Login</h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Username <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="text" value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} placeholder="contoh: budi.santoso" className="input-field pl-10" minLength={3} />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1.5">Password <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="Minimal 6 karakter" className="input-field pl-10" minLength={6} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+                  <div className="flex items-start gap-2">
+                    <span className="text-base leading-none mt-0.5">⚠️</span>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      <strong>Penting:</strong> Catat username dan password ini. Akun akan langsung aktif setelah dibuat karena dibuat oleh admin.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between pt-4 border-t border-gray-100">
+                  <Button variant="outline" onClick={() => setAddStep(2)}>Kembali</Button>
+                  <Button onClick={handleSubmit} loading={saving}>Buat Akun Pegawai</Button>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Divider */}
-          <div className="border-t border-gray-200 my-5"></div>
-
-          {/* Section: Data Pribadi */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
-                <MdPeople className="w-3.5 h-3.5 text-emerald-600" />
-              </div>
-              <h3 className="text-sm font-semibold text-gray-800">Data Pegawai</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={form.nip}
-                  onChange={(e) => setForm({ ...form, nip: e.target.value })}
-                  placeholder="Masukkan NIP"
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
-                <input
-                  type="text"
-                  value={form.nama}
-                  onChange={(e) => setForm({ ...form, nama: e.target.value })}
-                  placeholder="Masukkan nama lengkap"
-                  className="input-field"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
-                <select
-                  value={form.jabatan}
-                  onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="">Pilih jabatan</option>
-                  {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
-                <select
-                  value={form.divisi}
-                  onChange={(e) => setForm({ ...form, divisi: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="">Pilih divisi</option>
-                  {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
-                <div className="relative">
-                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="nama@tvri.go.id"
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nomor HP</label>
-                <div className="relative">
-                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    value={form.nomor_hp}
-                    onChange={(e) => setForm({ ...form, nomor_hp: e.target.value })}
-                    placeholder="08xxxxxxxxxx"
-                    className="input-field pl-10"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-            <Button variant="outline" onClick={() => setShowModal(false)}>Batal</Button>
-            <Button type="submit" loading={saving}>
-              {editItem ? 'Simpan Perubahan' : 'Tambah Pegawai'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* ========== KONFIRMASI HAPUS ========== */}
+        )}
+      </Modal>      {/* ========== KONFIRMASI HAPUS ========== */}
       <ConfirmDialog
         isOpen={showDelete}
         onClose={() => setShowDelete(false)}
         onConfirm={handleDelete}
         title="Hapus Pegawai"
-        message={`Apakah Anda yakin ingin menghapus data pegawai "${deleteItem?.nama}"? Akun login pegawai ini juga akan dihapus.`}
+        message={`Apakah Anda yakin ingin menghapus pegawai "${deleteItem?.nama}"? Akun login pegawai ini juga akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`}
       />
+
+      {/* ========== REJECT REGISTRATION MODAL ========== */}
+      <Modal isOpen={showRejectModal} onClose={() => { setShowRejectModal(false); setRejectingUser(null); }} title="Tolak Registrasi" size="sm">
+        <div className="space-y-4">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <p className="text-sm text-red-700">
+              Menolak registrasi dari <strong>{rejectingUser?.nama}</strong> (@{rejectingUser?.username})
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1.5">Alasan Penolakan <span className="text-gray-400 font-normal">(opsional)</span></label>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Masukkan alasan penolakan..."
+              rows={3}
+              className="input-field"
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+          <Button variant="outline" onClick={() => { setShowRejectModal(false); setRejectingUser(null); }}>Batal</Button>
+          <Button onClick={handleReject} className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700">Tolak Registrasi</Button>
+        </div>
+      </Modal>
     </div>
   );
 };

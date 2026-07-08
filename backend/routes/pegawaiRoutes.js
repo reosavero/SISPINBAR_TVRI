@@ -1,16 +1,26 @@
+// ============================================
+// PEGAWAI ROUTES - Sistem Peminjaman Barang TVRI
+// Updated: Role hierarchy (super_admin + admin can manage)
+// ============================================
+
 const express = require('express');
 const router = express.Router();
 const pegawaiController = require('../controllers/pegawaiController');
-const { auth, authorize } = require('../middleware/auth');
+const { auth, authorize, adminAndAbove } = require('../middleware/auth');
 
-// Public routes (dengan auth biasa - bisa lihat daftar pegawai)
-router.get('/', auth, pegawaiController.getAll);
-router.get('/:id', auth, pegawaiController.getById);
+// Semua route memerlukan autentikasi
+router.use(auth);
 
-// Admin-only routes (hanya admin yang bisa tambah/edit/hapus pegawai)
-router.post('/', auth, authorize('admin'), pegawaiController.create);
-router.put('/:id', auth, authorize('admin'), pegawaiController.update);
-router.delete('/:id', auth, authorize('admin'), pegawaiController.delete);
-router.put('/:id/reset-password', auth, authorize('admin'), pegawaiController.resetPassword);
+// GET routes - admin dan super_admin bisa lihat daftar pegawai
+router.get('/', adminAndAbove, pegawaiController.getAll);
+router.get('/:id', adminAndAbove, pegawaiController.getById);
+
+// CRUD - admin dan super_admin bisa CRUD pegawai
+router.post('/send-otp', adminAndAbove, pegawaiController.sendOtp);
+router.post('/verify-otp', adminAndAbove, pegawaiController.verifyOtp);
+router.post('/', adminAndAbove, pegawaiController.create);
+router.put('/:id', adminAndAbove, pegawaiController.update);
+router.delete('/:id', adminAndAbove, pegawaiController.delete);
+router.put('/:id/reset-password', adminAndAbove, pegawaiController.resetPassword);
 
 module.exports = router;

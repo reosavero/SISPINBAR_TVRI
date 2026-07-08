@@ -33,9 +33,9 @@ const perpanjanganController = {
   getAll: async (req, res) => {
     try {
       const params = { ...req.query };
-      // Pegawai hanya melihat miliknya
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        params.pegawai_id = req.user.pegawai_id;
+      // Pegawai hanya melihat perpanjangan miliknya
+      if (req.user.role === 'pegawai') {
+        params.pegawai_id = req.user.id;
       }
       const result = await perpanjanganService.getAll(params);
       res.json({ success: true, ...result });

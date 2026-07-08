@@ -14,16 +14,16 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   enableKeepAlive: true,
+  timezone: '+07:00',
 });
 
-// Test connection
-pool.getConnection()
-  .then((conn) => {
-    console.log('✅ Database connected successfully');
-    conn.release();
-  })
-  .catch((err) => {
-    console.error('❌ Database connection failed:', err.message);
-  });
+// Pool connects lazily on first query — no eager getConnection needed.
+// Connection errors surface naturally on first query if DB is unreachable.
+
+// Graceful shutdown helper for scripts/tests
+const closePool = async () => {
+  try { await pool.end(); } catch (e) { /* ignore */ }
+};
 
 module.exports = pool;
+module.exports.closePool = closePool;

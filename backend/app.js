@@ -1,6 +1,6 @@
 // ============================================
 // APP - Sistem Peminjaman Barang TVRI
-// (Updated: new routes for export, notification, perpanjangan, audit)
+// Updated: Super Admin Role System
 // ============================================
 
 const express = require('express');
@@ -22,6 +22,10 @@ const exportRoutes = require('./routes/exportRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const perpanjanganRoutes = require('./routes/perpanjanganRoutes');
 const auditRoutes = require('./routes/auditRoutes');
+const archiveRoutes = require('./routes/archiveRoutes');
+const userRoutes = require('./routes/userRoutes');
+const settingsRoutes = require('./routes/settingsRoutes');
+const lokasiRoutes = require('./routes/lokasiRoutes');
 
 // Middleware
 const { auth, authorize } = require('./middleware/auth');
@@ -71,6 +75,10 @@ app.use('/api/export', exportRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/perpanjangan', perpanjanganRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/archive', archiveRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/lokasi', lokasiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

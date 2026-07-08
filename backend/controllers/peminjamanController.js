@@ -9,9 +9,9 @@ const peminjamanController = {
     try {
       const params = { ...req.query };
 
-      // Jika pegawai (bukan admin), hanya tampilkan peminjaman miliknya
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        params.pegawai_id = req.user.pegawai_id;
+      // Pegawai hanya bisa melihat peminjaman miliknya sendiri
+      if (req.user.role === 'pegawai') {
+        params.pegawai_id = req.user.id;
       }
 
       const result = await peminjamanService.getAll(params);
@@ -26,8 +26,8 @@ const peminjamanController = {
       const result = await peminjamanService.getById(req.params.id);
       if (!result) return res.status(404).json({ success: false, message: 'Peminjaman tidak ditemukan' });
 
-      // Jika pegawai, pastikan hanya bisa melihat peminjaman miliknya
-      if (req.user.role !== 'admin' && req.user.pegawai_id && result.pegawai_id !== req.user.pegawai_id) {
+      // Pegawai hanya bisa melihat detail peminjaman miliknya
+      if (req.user.role === 'pegawai' && result.pegawai_id !== req.user.id) {
         return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk melihat peminjaman ini' });
       }
 
@@ -40,18 +40,18 @@ const peminjamanController = {
   create: async (req, res) => {
     try {
       const data = {
-        pegawai_id: req.body.pegawai_id,
+        pegawai_id: req.body.pegawai_id || null,
         barang_id: req.body.barang_id,
         jumlah: req.body.jumlah,
-        tanggal_pinjam: req.body.tanggal_pinjam,
-        tanggal_kembali_rencana: req.body.tanggal_kembali_rencana,
-        keperluan: req.body.keperluan,
+        tanggal_pinjam: req.body.tanggal_pinjam || null,
+        tanggal_kembali_rencana: req.body.tanggal_kembali_rencana || null,
+        keperluan: req.body.keperluan || null,
         foto: req.file ? `/uploads/peminjaman/${req.file.filename}` : null,
       };
 
-      // Jika pegawai (bukan admin), auto-assign pegawai_id dari user yang login
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        data.pegawai_id = req.user.pegawai_id;
+      // Pegawai auto-assign pegawai_id from logged-in user
+      if (req.user.role === 'pegawai') {
+        data.pegawai_id = req.user.id;
       }
 
       const result = await peminjamanService.create(data);
@@ -130,7 +130,7 @@ const peminjamanController = {
   // Pegawai can update their own peminjaman if still Menunggu Persetujuan
   updateByPegawai: async (req, res) => {
     try {
-      const pegawaiId = req.user.pegawai_id;
+      const pegawaiId = req.user.id;
       if (!pegawaiId) {
         return res.status(403).json({ success: false, message: 'Akses ditolak' });
       }
@@ -154,7 +154,7 @@ const peminjamanController = {
   // Pegawai can delete their own peminjaman if still Menunggu Persetujuan
   deleteByPegawai: async (req, res) => {
     try {
-      const pegawaiId = req.user.pegawai_id;
+      const pegawaiId = req.user.id;
       if (!pegawaiId) {
         return res.status(403).json({ success: false, message: 'Akses ditolak' });
       }

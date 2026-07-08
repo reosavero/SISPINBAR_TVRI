@@ -14,12 +14,20 @@ CREATE TABLE IF NOT EXISTS users (
   email VARCHAR(100) DEFAULT NULL,
   password VARCHAR(255) NOT NULL,
   nama VARCHAR(100) NOT NULL,
-  role ENUM('admin', 'operator', 'viewer') DEFAULT 'operator',
+  role ENUM('super_admin', 'admin', 'pegawai') DEFAULT 'pegawai',
   avatar VARCHAR(255) DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  registration_status ENUM('pending', 'approved', 'rejected') DEFAULT 'approved' COMMENT 'pending = menunggu persetujuan, approved = disetujui, rejected = ditolak',
+  rejection_reason TEXT NULL COMMENT 'Alasan penolakan registrasi',
+  login_attempts INT DEFAULT 0 COMMENT 'Jumlah percobaan login gagal',
+  locked_until DATETIME NULL COMMENT 'Waktu sampai akun terkunci',
+  deleted_at DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_username (username),
-  INDEX idx_email (email)
+  INDEX idx_email (email),
+  INDEX idx_users_locked_until (locked_until),
+  INDEX idx_users_registration_status (registration_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -27,10 +35,12 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================================
 CREATE TABLE IF NOT EXISTS kategori (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  nama VARCHAR(100) NOT NULL,
+  nama VARCHAR(100) NOT NULL UNIQUE,
   deskripsi TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE INDEX uk_kategori_nama (nama)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -51,6 +61,7 @@ CREATE TABLE IF NOT EXISTS barang (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (kategori_id) REFERENCES kategori(id) ON DELETE SET NULL,
   INDEX idx_kode (kode_barang),
+  UNIQUE INDEX uk_barang_nama_barang (nama_barang),
   INDEX idx_status (status),
   INDEX idx_kategori (kategori_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -85,11 +96,11 @@ CREATE TABLE IF NOT EXISTS peminjaman (
   pegawai_id INT NOT NULL,
   barang_id INT NOT NULL,
   jumlah INT DEFAULT 1,
-  tanggal_pinjam DATE NOT NULL,
-  tanggal_kembali_rencana DATE NOT NULL,
+  tanggal_pinjam DATETIME NOT NULL,
+  tanggal_kembali_rencana DATETIME NOT NULL,
   keperluan TEXT,
   foto VARCHAR(255) DEFAULT NULL,
-  status ENUM('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Dikembalikan', 'Ditolak') DEFAULT 'Menunggu Persetujuan',
+  status ENUM('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi', 'Dikembalikan', 'Ditolak') DEFAULT 'Menunggu Persetujuan',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (pegawai_id) REFERENCES pegawai(id) ON DELETE CASCADE,
@@ -106,10 +117,12 @@ CREATE TABLE IF NOT EXISTS peminjaman (
 CREATE TABLE IF NOT EXISTS pengembalian (
   id INT AUTO_INCREMENT PRIMARY KEY,
   peminjaman_id INT NOT NULL,
-  tanggal_kembali_aktual DATE NOT NULL,
+  tanggal_kembali_aktual DATETIME NOT NULL,
   kondisi_barang ENUM('Baik', 'Rusak Ringan', 'Rusak Berat') DEFAULT 'Baik',
   catatan TEXT,
+  catatan_admin TEXT DEFAULT NULL,
   foto VARCHAR(255),
+  status ENUM('Menunggu Konfirmasi', 'Diterima', 'Ditolak') DEFAULT 'Menunggu Konfirmasi',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (peminjaman_id) REFERENCES peminjaman(id) ON DELETE CASCADE,
   INDEX idx_peminjaman (peminjaman_id),

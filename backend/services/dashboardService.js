@@ -19,6 +19,9 @@ const dashboardService = {
       totalPegawai: row.total_pegawai,
       peminjamanHariIni: row.peminjaman_hari_ini,
       pengembalianHariIni: row.pengembalian_hari_ini,
+      totalLokasi: row.total_lokasi,
+      lokasiAktif: row.lokasi_aktif,
+      lokasiTidakAktif: row.lokasi_tidak_aktif,
     };
   },
 

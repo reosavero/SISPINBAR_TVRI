@@ -6,42 +6,13 @@ const exportService = require('../services/exportService');
 const auditService = require('../services/auditService');
 
 const exportController = {
-  // Export Peminjaman ke PDF
-  exportPeminjamanPDF: async (req, res) => {
-    try {
-      const params = { ...req.query };
-      // Pegawai hanya bisa export data miliknya
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        params.pegawai_id = req.user.pegawai_id;
-      }
-
-      const buffer = await exportService.exportPeminjamanPDF(params);
-
-      // Audit log
-      await auditService.log({
-        userId: req.user.id,
-        username: req.user.username,
-        action: 'EXPORT',
-        module: 'peminjaman',
-        details: { format: 'pdf', filters: params },
-        ipAddress: req.ip,
-      });
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'attachment; filename=laporan-peminjaman.pdf');
-      res.send(buffer);
-    } catch (error) {
-      console.error('Export PDF error:', error);
-      res.status(500).json({ success: false, message: 'Gagal mengekspor PDF' });
-    }
-  },
-
   // Export Peminjaman ke Excel
   exportPeminjamanExcel: async (req, res) => {
     try {
       const params = { ...req.query };
-      if (req.user.role !== 'admin' && req.user.pegawai_id) {
-        params.pegawai_id = req.user.pegawai_id;
+      // Pegawai hanya bisa export data peminjaman miliknya
+      if (req.user.role === 'pegawai') {
+        params.pegawai_id = req.user.id;
       }
 
       const buffer = await exportService.exportPeminjamanExcel(params);
@@ -87,6 +58,34 @@ const exportController = {
       res.send(buffer);
     } catch (error) {
       console.error('Export Barang Excel error:', error);
+      res.status(500).json({ success: false, message: 'Gagal mengekspor Excel' });
+    }
+  },
+
+  // Export Riwayat ke Excel
+  exportRiwayatExcel: async (req, res) => {
+    try {
+      const params = { ...req.query };
+      if (req.user.role === 'pegawai') {
+        params.pegawai_id = req.user.id;
+      }
+
+      const buffer = await exportService.exportRiwayatExcel(params);
+
+      await auditService.log({
+        userId: req.user.id,
+        username: req.user.username,
+        action: 'EXPORT',
+        module: 'riwayat',
+        details: { format: 'excel', filters: params },
+        ipAddress: req.ip,
+      });
+
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', 'attachment; filename=laporan-riwayat.xlsx');
+      res.send(buffer);
+    } catch (error) {
+      console.error('Export Riwayat Excel error:', error);
       res.status(500).json({ success: false, message: 'Gagal mengekspor Excel' });
     }
   },

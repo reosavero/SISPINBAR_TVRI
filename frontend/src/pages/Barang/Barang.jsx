@@ -3,6 +3,7 @@
 // ============================================
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiEye, FiUpload, FiX, FiPackage, FiCrop } from 'react-icons/fi';
 import Button from '../../components/ui/Button';
@@ -13,16 +14,20 @@ import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import ImageCropModal from '../../components/ui/ImageCropModal';
 import { generateKodeBarang, getBarangFotoUrl } from '../../utils/format';
-import { KATEGORI_DEFAULT, LOKASI, STATUS_BARANG, KONDISI_BARANG } from '../../utils/constants';
+import { KATEGORI_DEFAULT, STATUS_BARANG, KONDISI_BARANG } from '../../utils/constants';
+import lokasiService from '../../services/lokasiService';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
 const Barang = () => {
+  const [searchParams] = useSearchParams();
+  const initialStatus = searchParams.get('status') || '';
+
   const [barang, setBarang] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterKategori, setFilterKategori] = useState('');
-  const [filterStatus, setFilterStatus] = useState('');
+  const [filterStatus, setFilterStatus] = useState(initialStatus);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -52,18 +57,30 @@ const Barang = () => {
     kode_barang: '',
     nama_barang: '',
     kategori_id: '',
-    lokasi: '',
+    lokasi: 'Studio Podcast',
+    lokasi_id: '',
     kondisi: 'Baik',
     status: 'Tersedia',
     deskripsi: '',
   });
 
   const [categories, setCategories] = useState([]);
+  const [lokasiList, setLokasiList] = useState([]);
 
   useEffect(() => {
     fetchBarang();
     fetchCategories();
+    fetchLokasi();
   }, [currentPage, search, filterKategori, filterStatus]);
+
+  const fetchLokasi = async () => {
+    try {
+      const res = await lokasiService.getActive();
+      setLokasiList(res.data || []);
+    } catch {
+      setLokasiList([]);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -107,7 +124,8 @@ const Barang = () => {
         kode_barang: generateKodeBarang('KAM', totalCount + 1),
         nama_barang: '',
         kategori_id: '',
-        lokasi: '',
+        lokasi: lokasiList.length > 0 ? lokasiList[0].nama_lokasi : 'Studio Podcast',
+        lokasi_id: lokasiList.length > 0 ? String(lokasiList[0].id) : '',
         kondisi: 'Baik',
         status: 'Tersedia',
         deskripsi: '',
@@ -118,7 +136,8 @@ const Barang = () => {
         kode_barang: generateKodeBarang('KAM', barang.length + 1),
         nama_barang: '',
         kategori_id: '',
-        lokasi: '',
+        lokasi: lokasiList.length > 0 ? lokasiList[0].nama_lokasi : 'Studio Podcast',
+        lokasi_id: lokasiList.length > 0 ? String(lokasiList[0].id) : '',
         kondisi: 'Baik',
         status: 'Tersedia',
         deskripsi: '',
@@ -138,7 +157,8 @@ const Barang = () => {
       kode_barang: item.kode_barang,
       nama_barang: item.nama_barang,
       kategori_id: String(item.kategori_id || item.kategori_nama),
-      lokasi: item.lokasi,
+      lokasi: item.lokasi_nama || item.lokasi,
+      lokasi_id: item.lokasi_id ? String(item.lokasi_id) : '',
       kondisi: item.kondisi,
       status: item.status,
       deskripsi: item.deskripsi || '',
@@ -195,11 +215,20 @@ const Barang = () => {
       toast.error('Nama barang dan kategori wajib diisi');
       return;
     }
+    // Client-side duplicate name check (case-insensitive)
+    const duplicateName = barang.find(
+      b => b.nama_barang.toLowerCase().trim() === form.nama_barang.toLowerCase().trim() && (!editItem || b.id !== editItem.id)
+    );
+    if (duplicateName) {
+      toast.error(`Nama barang "${form.nama_barang.trim()}" sudah digunakan. Gunakan nama lain.`);
+      return;
+    }
     setSaving(true);
     try {
       const payload = {
         ...form,
         kategori_id: parseInt(form.kategori_id),
+        lokasi_id: form.lokasi_id ? parseInt(form.lokasi_id) : null,
       };
       if (editItem) {
         await api.put(`/barang/${editItem.id}`, payload);
@@ -508,12 +537,18 @@ const Barang = () => {
               </select>
             </div>
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Lokasi</label>
-              <select name="lokasi" value={form.lokasi} onChange={handleChange} className="input-field" required>
-                <option value="">Pilih lokasi</option>
-                {LOKASI.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">Lokasi Barang</label>
+              <select name="lokasi" value={form.lokasi} onChange={(e) => {
+                const selectedLokasi = lokasiList.find(l => l.nama_lokasi === e.target.value);
+                setForm({ ...form, lokasi: e.target.value, lokasi_id: selectedLokasi ? String(selectedLokasi.id) : '' });
+              }} className="input-field" required>
+                {lokasiList.length > 0 ? (
+                  lokasiList.map(l => (
+                    <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}{l.gedung ? ` — ${l.gedung}` : ''}{l.lantai ? ` Lt. ${l.lantai}` : ''}</option>
+                  ))
+                ) : (
+                  <option value="">Memuat lokasi...</option>
+                )}
               </select>
             </div>
             <div className="mb-4">
@@ -559,7 +594,7 @@ const Barang = () => {
                 <div><p className="text-xs text-gray-500">Nama Barang</p><p className="text-sm font-semibold">{detailItem.nama_barang}</p></div>
                 <div><p className="text-xs text-gray-500">Kategori</p><p className="text-sm">{detailItem.kategori_nama || detailItem.kategori_id}</p></div>
                 <div><p className="text-xs text-gray-500">Jumlah</p><p className="text-sm font-semibold">{detailItem.jumlah || 1} unit</p></div>
-                <div><p className="text-xs text-gray-500">Lokasi</p><p className="text-sm">{detailItem.lokasi}</p></div>
+                <div><p className="text-xs text-gray-500">Lokasi</p><p className="text-sm">{detailItem.lokasi_nama || detailItem.lokasi}{detailItem.lokasi_gedung ? ` — ${detailItem.lokasi_gedung}` : ''}{detailItem.lokasi_lantai ? ` Lt. ${detailItem.lokasi_lantai}` : ''}{detailItem.lokasi_ruangan ? `, ${detailItem.lokasi_ruangan}` : ''}</p></div>
                 <div><p className="text-xs text-gray-500">Kondisi</p><Badge status={detailItem.kondisi} /></div>
                 <div><p className="text-xs text-gray-500">Status</p><Badge status={detailItem.status} /></div>
               </div>

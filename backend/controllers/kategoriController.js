@@ -29,6 +29,9 @@ const kategoriController = {
       const result = await kategoriService.create(req.body);
       res.status(201).json({ success: true, data: result, message: 'Kategori berhasil ditambahkan' });
     } catch (error) {
+      if (error.message.includes('sudah digunakan')) {
+        return res.status(409).json({ success: false, message: error.message });
+      }
       res.status(500).json({ success: false, message: error.message });
     }
   },
@@ -38,6 +41,9 @@ const kategoriController = {
       const result = await kategoriService.update(req.params.id, req.body);
       res.json({ success: true, data: result, message: 'Kategori berhasil diperbarui' });
     } catch (error) {
+      if (error.message.includes('sudah digunakan')) {
+        return res.status(409).json({ success: false, message: error.message });
+      }
       res.status(500).json({ success: false, message: error.message });
     }
   },

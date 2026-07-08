@@ -24,7 +24,8 @@ import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import CameraUpload from '../../components/ui/CameraUpload';
-import { formatDate, getBarangFotoUrl } from '../../utils/format';
+import NumberInput from '../../components/ui/NumberInput';
+import { formatDate, formatDatePukul, getBarangFotoUrl } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -246,7 +247,7 @@ const Peminjaman = () => {
       return;
     }
     if (!pinjamFotoFile) {
-      toast.error('Foto bukti peminjaman wajib diunggah');
+      toast.error('Foto bukti peminjaman wajib diambil dari kamera');
       return;
     }
 
@@ -305,7 +306,7 @@ const Peminjaman = () => {
       return;
     }
     if (!adminFotoFile) {
-      toast.error('Foto bukti peminjaman wajib diunggah');
+      toast.error('Foto bukti peminjaman wajib diambil dari kamera');
       return;
     }
     // Validate jumlah against available stock
@@ -367,6 +368,57 @@ const Peminjaman = () => {
     fetchPeminjaman();
   };
 
+  // ===== HELPER: Render action buttons for admin (matches Pengembalian style) =====
+  const renderAdminActions = (item, variant = 'default') => {
+    const isPending = item.status === 'Menunggu Persetujuan';
+    return (
+      <div className="flex items-center gap-1.5">
+        {/* Detail */}
+        <button
+          onClick={() => { setDetailItem(item); setShowDetail(true); }}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-600 text-xs font-semibold transition-all duration-200 touch-manipulation min-h-[36px]"
+          title="Lihat Detail"
+        >
+          <FiEye className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">Detail</span>
+        </button>
+        {/* Setujui */}
+        {isPending && (
+          <button
+            onClick={() => { setActionItem(item); setShowApprove(true); }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-200 hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation min-h-[36px]"
+            title="Setujui Peminjaman"
+          >
+            <FiCheck className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Setujui</span>
+          </button>
+        )}
+        {/* Tolak */}
+        {isPending && (
+          <button
+            onClick={() => { setActionItem(item); setShowReject(true); }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-semibold shadow-sm shadow-red-200 hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation min-h-[36px]"
+            title="Tolak Peminjaman"
+          >
+            <FiX className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Tolak</span>
+          </button>
+        )}
+        {/* Cetak */}
+        {variant === 'full' && (
+          <button
+            onClick={() => handlePrint(item)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 active:bg-gray-200 text-gray-500 text-xs font-semibold transition-all duration-200 touch-manipulation min-h-[36px]"
+            title="Cetak"
+          >
+            <FiPrinter className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Cetak</span>
+          </button>
+        )}
+      </div>
+    );
+  };
+
   // ============ BULK ACTIONS ============
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
@@ -411,7 +463,7 @@ const Peminjaman = () => {
       <p><strong>Pegawai:</strong> ${item.pegawai_nama}</p>
       <p><strong>Barang:</strong> ${item.barang_nama}</p>
       <p><strong>Jumlah:</strong> ${item.jumlah}</p>
-      <p><strong>Tgl Pinjam:</strong> ${formatDate(item.tanggal_pinjam)}</p>
+      <p><strong>Tgl Pinjam:</strong> ${formatDatePukul(item.tanggal_pinjam)}</p>
       <p><strong>Tgl Kembali:</strong> ${formatDate(item.tanggal_kembali_rencana)}</p>
       <p><strong>Keperluan:</strong> ${item.keperluan}</p>
       <p><strong>Status:</strong> ${item.status}</p><br/><br/>
@@ -631,14 +683,13 @@ const Peminjaman = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Jumlah</label>
-                  <input
-                    type="number"
+                  <NumberInput
+                    label="Jumlah"
                     value={formPinjam.jumlah}
-                    onChange={(e) => setFormPinjam({ ...formPinjam, jumlah: parseInt(e.target.value) || 1 })}
-                    className="input-field"
-                    min="1"
+                    onChange={(val) => setFormPinjam({ ...formPinjam, jumlah: val })}
+                    min={1}
                     max={selectedBarang.tersedia != null ? selectedBarang.tersedia : selectedBarang.jumlah}
+                    hint={`Maks: ${selectedBarang.tersedia != null ? selectedBarang.tersedia : selectedBarang.jumlah} unit`}
                     required
                   />
                 </div>
@@ -679,12 +730,11 @@ const Peminjaman = () => {
                 </div>
               </div>
 
-              {/* Foto Kondisi Saat Peminjaman */}
+              {/* Foto Bukti Peminjaman */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Foto Kondisi Saat Peminjaman <span className="text-red-500">*</span>
+                  Foto Bukti Peminjaman <span className="text-red-500">*</span>
                 </label>
-                <p className="text-xs text-gray-400 mb-2">Unggah foto sebagai bukti pengambilan barang</p>
                 <CameraUpload
                   preview={pinjamFotoPreview}
                   onFileSelect={(file, previewUrl) => { setPinjamFotoFile(file); setPinjamFotoPreview(previewUrl); }}
@@ -732,15 +782,15 @@ const Peminjaman = () => {
               <div className="flex items-center justify-between pb-3 border-b border-gray-100">
                 <div>
                   <p className="text-lg font-bold text-[#005BAC]">{detailItem.nomor_peminjaman}</p>
-                  <p className="text-sm text-gray-500">{formatDate(detailItem.tanggal_pinjam)}</p>
+                  <p className="text-sm text-gray-500">{formatDatePukul(detailItem.tanggal_pinjam)}</p>
                 </div>
                 <Badge status={detailItem.status} />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div><p className="text-xs text-gray-500">Barang</p><p className="text-sm font-semibold">{detailItem.barang_nama}</p></div>
                 <div><p className="text-xs text-gray-500">Jumlah</p><p className="text-sm font-semibold">{detailItem.jumlah}</p></div>
-                <div><p className="text-xs text-gray-500">Tanggal Pinjam</p><p className="text-sm">{formatDate(detailItem.tanggal_pinjam)}</p></div>
-                <div><p className="text-xs text-gray-500">Tgl Kembali</p><p className="text-sm">{formatDate(detailItem.tanggal_kembali_rencana)}</p></div>
+                <div><p className="text-xs text-gray-500">Tanggal Pinjam</p><p className="text-sm">{formatDatePukul(detailItem.tanggal_pinjam)}</p></div>
+                <div><p className="text-xs text-gray-500">Tgl Kembali (Rencana)</p><p className="text-sm">{formatDate(detailItem.tanggal_kembali_rencana)}</p></div>
               </div>
               <div><p className="text-xs text-gray-500">Keperluan</p><p className="text-sm">{detailItem.keperluan}</p></div>
             </div>
@@ -833,12 +883,21 @@ const Peminjaman = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-800 truncate">{item.barang_nama}</p>
-                        <p className="text-xs text-gray-400">{item.kategori_nama} · {item.jumlah || 1} unit · {formatDate(item.tanggal_pinjam)}</p>
+                        <p className="text-xs text-gray-400">{item.kategori_nama} · {item.jumlah || 1} unit · {formatDatePukul(item.tanggal_pinjam)}</p>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => { setActionItem(item); setShowApprove(true); }} className="p-2 rounded-lg hover:bg-emerald-50 active:bg-emerald-100 text-emerald-600 touch-manipulation" title="Setujui"><FiCheck className="w-4 h-4" /></button>
-                        <button onClick={() => { setActionItem(item); setShowReject(true); }} className="p-2 rounded-lg hover:bg-red-50 active:bg-red-100 text-red-500 touch-manipulation" title="Tolak"><FiX className="w-4 h-4" /></button>
-                        <button onClick={() => { setDetailItem(item); setShowDetail(true); }} className="p-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-blue-600 touch-manipulation" title="Detail"><FiEye className="w-4 h-4" /></button>
+                      <div className="flex items-center gap-1.5">
+                        <button onClick={() => { setDetailItem(item); setShowDetail(true); }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-600 text-xs font-semibold transition-all duration-200 touch-manipulation min-h-[36px]" title="Detail">
+                          <FiEye className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Detail</span>
+                        </button>
+                        <button onClick={() => { setActionItem(item); setShowApprove(true); }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-semibold shadow-sm shadow-emerald-200 hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation min-h-[36px]" title="Setujui">
+                          <FiCheck className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Setujui</span>
+                        </button>
+                        <button onClick={() => { setActionItem(item); setShowReject(true); }} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-semibold shadow-sm shadow-red-200 hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation min-h-[36px]" title="Tolak">
+                          <FiX className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Tolak</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -899,20 +958,11 @@ const Peminjaman = () => {
                       <td className="py-3 px-4">
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">{item.jumlah || 1}</span>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-600">{formatDate(item.tanggal_pinjam)}</td>
+                      <td className="py-3 px-4 text-sm text-gray-600">{formatDatePukul(item.tanggal_pinjam)}</td>
                       <td className="py-3 px-4 text-sm text-gray-600">{formatDate(item.tanggal_kembali_rencana)}</td>
                       <td className="py-3 px-4"><Badge status={item.status} /></td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <button onClick={() => { setDetailItem(item); setShowDetail(true); }} className="p-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-blue-600 touch-manipulation" title="Detail"><FiEye className="w-4 h-4" /></button>
-                          {item.status === 'Menunggu Persetujuan' && (
-                            <>
-                              <button onClick={() => { setActionItem(item); setShowApprove(true); }} className="p-2 rounded-lg hover:bg-emerald-50 active:bg-emerald-100 text-emerald-600 touch-manipulation" title="Setujui"><FiCheck className="w-4 h-4" /></button>
-                              <button onClick={() => { setActionItem(item); setShowReject(true); }} className="p-2 rounded-lg hover:bg-red-50 active:bg-red-100 text-red-500 touch-manipulation" title="Tolak"><FiX className="w-4 h-4" /></button>
-                            </>
-                          )}
-                          <button onClick={() => handlePrint(item)} className="p-2 rounded-lg hover:bg-gray-100 active:bg-gray-200 text-gray-500 touch-manipulation" title="Cetak"><FiPrinter className="w-4 h-4" /></button>
-                        </div>
+                        {renderAdminActions(item, 'full')}
                       </td>
                     </motion.tr>
                   );
@@ -952,17 +1002,11 @@ const Peminjaman = () => {
                   <div className="grid grid-cols-2 gap-1 text-xs text-gray-500 mb-3">
                     <div><span className="text-gray-400">Pegawai:</span> <span className="font-medium text-gray-700">{item.pegawai_nama}</span></div>
                     <div><span className="text-gray-400">Jumlah:</span> <span className="font-medium text-gray-700">{item.jumlah || 1}</span></div>
-                    <div><span className="text-gray-400">Pinjam:</span> <span className="font-medium text-gray-700">{formatDate(item.tanggal_pinjam)}</span></div>
+                    <div><span className="text-gray-400">Pinjam:</span> <span className="font-medium text-gray-700">{formatDatePukul(item.tanggal_pinjam)}</span></div>
                     <div><span className="text-gray-400">Kembali:</span> <span className="font-medium text-gray-700">{formatDate(item.tanggal_kembali_rencana)}</span></div>
                   </div>
                   <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
-                    <button onClick={() => { setDetailItem(item); setShowDetail(true); }} className="flex-1 py-2.5 rounded-xl bg-blue-50 text-blue-600 text-xs font-semibold hover:bg-blue-100 active:bg-blue-200 transition-colors touch-manipulation min-h-[44px]">Detail</button>
-                    {item.status === 'Menunggu Persetujuan' && (
-                      <>
-                        <button onClick={() => { setActionItem(item); setShowApprove(true); }} className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-xs font-bold shadow-sm shadow-emerald-200 active:scale-95 transition-all duration-200 touch-manipulation min-h-[44px]">Setujui</button>
-                        <button onClick={() => { setActionItem(item); setShowReject(true); }} className="flex-1 py-2.5 rounded-xl bg-red-50 text-red-500 text-xs font-semibold hover:bg-red-100 active:bg-red-200 transition-colors touch-manipulation min-h-[44px]">Tolak</button>
-                      </>
-                    )}
+                    {renderAdminActions(item, 'full')}
                   </div>
                 </div>
               );
@@ -996,8 +1040,15 @@ const Peminjaman = () => {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Jumlah</label>
-              <input type="number" value={adminForm.jumlah} onChange={(e) => setAdminForm({ ...adminForm, jumlah: parseInt(e.target.value) || 1 })} className="input-field" min="1" max={(() => { const sel = availableBarang.find(b => String(b.id) === String(adminForm.barang_id)); return sel ? (sel.tersedia != null ? sel.tersedia : sel.jumlah) : 1; })()} />
+              <NumberInput
+                label="Jumlah"
+                value={adminForm.jumlah}
+                onChange={(val) => setAdminForm({ ...adminForm, jumlah: val })}
+                min={1}
+                max={(() => { const sel = availableBarang.find(b => String(b.id) === String(adminForm.barang_id)); return sel ? (sel.tersedia != null ? sel.tersedia : sel.jumlah) : 1; })()}
+                hint={(() => { const sel = availableBarang.find(b => String(b.id) === String(adminForm.barang_id)); return sel ? `Maks: ${sel.tersedia != null ? sel.tersedia : sel.jumlah} unit` : ''; })()}
+                required
+              />
             </div>
             <div></div>
             <div>
@@ -1013,12 +1064,11 @@ const Peminjaman = () => {
               <textarea value={adminForm.keperluan} onChange={(e) => setAdminForm({ ...adminForm, keperluan: e.target.value })} placeholder="Jelaskan keperluan peminjaman" rows={3} className="input-field" required />
             </div>
 
-            {/* Foto Kondisi Saat Peminjaman */}
+            {/* Foto Bukti Peminjaman */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                Foto Kondisi Saat Peminjaman <span className="text-red-500">*</span>
+                Foto Bukti Peminjaman <span className="text-red-500">*</span>
               </label>
-              <p className="text-xs text-gray-400 mb-2">Unggah foto sebagai bukti peminjaman barang</p>
               <CameraUpload
                 preview={adminFotoPreview}
                 onFileSelect={(file, previewUrl) => { setAdminFotoFile(file); setAdminFotoPreview(previewUrl); }}
@@ -1057,7 +1107,7 @@ const Peminjaman = () => {
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <p className="text-lg font-bold text-[#005BAC]">{detailItem.nomor_peminjaman}</p>
-                <p className="text-sm text-gray-500">{formatDate(detailItem.tanggal_pinjam)}</p>
+                <p className="text-sm text-gray-500">{formatDatePukul(detailItem.tanggal_pinjam)}</p>
               </div>
               <Badge status={detailItem.status} />
             </div>
@@ -1065,8 +1115,8 @@ const Peminjaman = () => {
               <div><p className="text-xs text-gray-500">Pegawai</p><p className="text-sm font-semibold">{detailItem.pegawai_nama}</p></div>
               <div><p className="text-xs text-gray-500">Barang</p><p className="text-sm font-semibold">{detailItem.barang_nama}</p></div>
               <div><p className="text-xs text-gray-500">Jumlah</p><p className="text-sm font-semibold">{detailItem.jumlah || 1} unit</p></div>
-              <div><p className="text-xs text-gray-500">Tanggal Pinjam</p><p className="text-sm">{formatDate(detailItem.tanggal_pinjam)}</p></div>
-              <div><p className="text-xs text-gray-500">Tgl Kembali</p><p className="text-sm">{formatDate(detailItem.tanggal_kembali_rencana)}</p></div>
+              <div><p className="text-xs text-gray-500">Tanggal Pinjam</p><p className="text-sm">{formatDatePukul(detailItem.tanggal_pinjam)}</p></div>
+              <div><p className="text-xs text-gray-500">Tgl Kembali (Rencana)</p><p className="text-sm">{formatDate(detailItem.tanggal_kembali_rencana)}</p></div>
             </div>
             <div><p className="text-xs text-gray-500">Keperluan</p><p className="text-sm">{detailItem.keperluan}</p></div>
           </div>

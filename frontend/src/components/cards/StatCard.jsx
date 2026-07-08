@@ -5,7 +5,7 @@
 
 import { motion } from 'framer-motion';
 
-const StatCard = ({ title, value, icon: Icon, color = 'primary', trend, trendLabel }) => {
+const StatCard = ({ title, value, icon: Icon, color = 'primary', trend, trendLabel, onClick }) => {
   const colorMap = {
     primary: { bg: 'bg-[#E8F1FA]', icon: 'text-[#005BAC]', border: 'border-[#005BAC]/10' },
     success: { bg: 'bg-emerald-50', icon: 'text-emerald-600', border: 'border-emerald-500/10' },
@@ -22,7 +22,10 @@ const StatCard = ({ title, value, icon: Icon, color = 'primary', trend, trendLab
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className={`stat-card border ${c.border}`}
+      className={`stat-card border ${c.border}${onClick ? ' cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">

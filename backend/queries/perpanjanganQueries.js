@@ -10,11 +10,11 @@ const perpanjanganQueries = {
 
   getAll: `
     SELECT pp.*, p.nomor_peminjaman, p.jumlah, p.keperluan,
-           pg.nama AS pegawai_nama, b.nama_barang AS barang_nama,
+           u.nama AS pegawai_nama, b.nama_barang AS barang_nama,
            b.kode_barang, k.nama AS kategori_nama
     FROM perpanjangan pp
     LEFT JOIN peminjaman p ON pp.peminjaman_id = p.id
-    LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+    LEFT JOIN users u ON p.pegawai_id = u.id
     LEFT JOIN barang b ON p.barang_id = b.id
     LEFT JOIN kategori k ON b.kategori_id = k.id
     ORDER BY pp.created_at DESC
@@ -24,19 +24,19 @@ const perpanjanganQueries = {
   countAll: `
     SELECT COUNT(*) AS total FROM perpanjangan pp
     LEFT JOIN peminjaman p ON pp.peminjaman_id = p.id
-    LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+    LEFT JOIN users u ON p.pegawai_id = u.id
     LEFT JOIN barang b ON p.barang_id = b.id
-    WHERE (? IS NULL OR pg.nama LIKE CONCAT('%', ?, '%'))
+    WHERE (? IS NULL OR u.nama LIKE CONCAT('%', ?, '%'))
     AND (? IS NULL OR pp.status = ?)
   `,
 
   getByPegawai: `
     SELECT pp.*, p.nomor_peminjaman, p.jumlah, p.keperluan,
-           pg.nama AS pegawai_nama, b.nama_barang AS barang_nama,
+           u.nama AS pegawai_nama, b.nama_barang AS barang_nama,
            b.kode_barang, k.nama AS kategori_nama
     FROM perpanjangan pp
     LEFT JOIN peminjaman p ON pp.peminjaman_id = p.id
-    LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+    LEFT JOIN users u ON p.pegawai_id = u.id
     LEFT JOIN barang b ON p.barang_id = b.id
     LEFT JOIN kategori k ON b.kategori_id = k.id
     WHERE p.pegawai_id = ?
@@ -53,11 +53,11 @@ const perpanjanganQueries = {
   getById: `
     SELECT pp.*, p.nomor_peminjaman, p.jumlah, p.keperluan,
            p.pegawai_id, p.barang_id, p.tanggal_pinjam, p.tanggal_kembali_rencana,
-           pg.nama AS pegawai_nama, b.nama_barang AS barang_nama,
+           u.nama AS pegawai_nama, b.nama_barang AS barang_nama,
            b.kode_barang, k.nama AS kategori_nama
     FROM perpanjangan pp
     LEFT JOIN peminjaman p ON pp.peminjaman_id = p.id
-    LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+    LEFT JOIN users u ON p.pegawai_id = u.id
     LEFT JOIN barang b ON p.barang_id = b.id
     LEFT JOIN kategori k ON b.kategori_id = k.id
     WHERE pp.id = ?

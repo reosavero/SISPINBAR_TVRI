@@ -1,45 +1,53 @@
 // ============================================
 // PEGAWAI SERVICE - Sistem Peminjaman Barang TVRI
+// Now using users table directly (pegawai merged into users)
 // ============================================
 
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
 const pegawaiQueries = require('../queries/pegawaiQueries');
-const { paginate } = require('../utils/helpers');
 const auditService = require('./auditService');
 
 const pegawaiService = {
+  // ========== GET ALL PEGAWAI ==========
   getAll: async (params = {}) => {
-    const page = parseInt(params.page) || 1;
     const search = params.search || null;
     const divisi = params.divisi || null;
-    const { offset } = paginate(page, 10);
-    const itemsPerPage = 10;
 
-    const [rows] = await pool.execute(pegawaiQueries.getAll, [
-      search, search, divisi, divisi,
-      itemsPerPage, offset,
-    ]);
+    let sql = pegawaiQueries.getAll;
+    let queryParams = [];
 
-    const [countResult] = await pool.execute(pegawaiQueries.countAll, [
-      search, search, divisi, divisi,
-    ]);
+    const conditions = [];
+    if (search) {
+      conditions.push('(nama LIKE ? OR nip LIKE ? OR username LIKE ? OR email LIKE ?)');
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`);
+    }
+    if (divisi) {
+      conditions.push('divisi = ?');
+      queryParams.push(divisi);
+    }
 
-    const totalItems = countResult[0].total;
-    const totalPages = Math.ceil(totalItems / itemsPerPage);
+    if (conditions.length > 0) {
+      sql += ' AND ' + conditions.join(' AND ');
+    }
 
-    return {
-      data: rows,
-      pagination: { page, totalPages, totalItems, itemsPerPage },
-    };
+    const [rows] = await pool.execute(sql, queryParams);
+    return { data: rows, total: rows.length };
   },
 
+  // ========== GET PEGAWAI BY ID ==========
   getById: async (id) => {
     const [rows] = await pool.execute(pegawaiQueries.getById, [id]);
     return rows[0] || null;
   },
 
-  // ========== CREATE - Buat akun user + data pegawai sekaligus ==========
+  // ========== GET PEGAWAI BY USER ID (same as getById now) ==========
+  getByUserId: async (userId) => {
+    const [rows] = await pool.execute(pegawaiQueries.getByUserId, [userId]);
+    return rows[0] || null;
+  },
+
+  // ========== CREATE - Buat akun pegawai ==========
   create: async (data) => {
     const { nip, nama, jabatan, divisi, email, nomor_hp, username, password } = data;
 
@@ -50,6 +58,10 @@ const pegawaiService = {
 
     if (password.length < 6) {
       throw new Error('Password minimal 6 karakter');
+    }
+
+    if (username.length < 3) {
+      throw new Error('Username minimal 3 karakter');
     }
 
     // Cek duplikat username
@@ -75,41 +87,28 @@ const pegawaiService = {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Buat akun user terlebih dahulu
-    const [userResult] = await pool.execute(
-      'INSERT INTO users (username, email, password, nama, role) VALUES (?, ?, ?, ?, ?)',
-      [username, email || null, hashedPassword, nama, 'operator']
+    // Buat akun pegawai (single table now)
+    const [result] = await pool.execute(
+      pegawaiQueries.create,
+      [username, email || null, hashedPassword, nama, 'pegawai', nip, jabatan || null, divisi || null, nomor_hp || null, 1]
     );
 
-    const userId = userResult.insertId;
-
-    // Buat data pegawai dan link ke user
-    try {
-      const [pegawaiResult] = await pool.execute(pegawaiQueries.create, [
-        userId, nip, nama, jabatan || null, divisi || null, email || null, nomor_hp || null,
-      ]);
-
-      // Return pegawai data with user info
-      const [newPegawai] = await pool.execute(pegawaiQueries.getById, [pegawaiResult.insertId]);
-      return newPegawai[0];
-    } catch (error) {
-      // Jika gagal buat pegawai, hapus user yang sudah dibuat
-      await pool.execute('DELETE FROM users WHERE id = ?', [userId]);
-      throw error;
-    }
+    // Return created pegawai
+    const [newPegawai] = await pool.execute(pegawaiQueries.getById, [result.insertId]);
+    return newPegawai[0];
   },
 
-  // ========== UPDATE - Update data pegawai + akun user ==========
+  // ========== UPDATE - Update data pegawai ==========
   update: async (id, data) => {
     const { nip, nama, jabatan, divisi, email, nomor_hp, username } = data;
 
     // Ambil data pegawai saat ini
-    const [currentPegawai] = await pool.execute(pegawaiQueries.getById, [id]);
-    if (currentPegawai.length === 0) {
+    const [currentRows] = await pool.execute(pegawaiQueries.getById, [id]);
+    if (currentRows.length === 0) {
       throw new Error('Pegawai tidak ditemukan');
     }
 
-    const pegawai = currentPegawai[0];
+    const pegawai = currentRows[0];
 
     // Cek duplikat NIP (kecuali dirinya sendiri)
     const [existingNip] = await pool.execute(pegawaiQueries.checkNip, [nip, id]);
@@ -124,53 +123,54 @@ const pegawaiService = {
         throw new Error('Username sudah digunakan. Silakan pilih username lain.');
       }
 
-      // Update username di tabel users
+      // Update username + other fields
       await pool.execute(
-        'UPDATE users SET username = ?, nama = ?, email = ?, updated_at = NOW() WHERE id = ?',
-        [username, nama, email || null, pegawai.user_id]
+        'UPDATE users SET username = ?, nama = ?, nip = ?, jabatan = ?, divisi = ?, email = ?, nomor_hp = ?, updated_at = NOW() WHERE id = ?',
+        [username, nama, nip, jabatan || null, divisi || null, email || null, nomor_hp || null, id]
       );
-    } else if (pegawai.user_id) {
-      // Update nama dan email di tabel users jika tidak ubah username
+    } else {
+      // Update without username change
       await pool.execute(
-        'UPDATE users SET nama = ?, email = ?, updated_at = NOW() WHERE id = ?',
-        [nama, email || null, pegawai.user_id]
+        'UPDATE users SET nama = ?, nip = ?, jabatan = ?, divisi = ?, email = ?, nomor_hp = ?, updated_at = NOW() WHERE id = ?',
+        [nama, nip, jabatan || null, divisi || null, email || null, nomor_hp || null, id]
       );
     }
 
     // Update password jika dikirim
-    if (data.password && data.password.length >= 6 && pegawai.user_id) {
+    if (data.password && data.password.length >= 6) {
       const hashedPassword = await bcrypt.hash(data.password, 10);
-      await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, pegawai.user_id]);
+      await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, id]);
     }
 
-    // Update data pegawai
-    await pool.execute(pegawaiQueries.update, [
-      nip, nama, jabatan || null, divisi || null, email || null, nomor_hp || null, id,
-    ]);
-
     // Return updated data
-    const [updatedPegawai] = await pool.execute(pegawaiQueries.getById, [id]);
-    return updatedPegawai[0];
+    const [updatedRows] = await pool.execute(pegawaiQueries.getById, [id]);
+    return updatedRows[0];
   },
 
-  // ========== DELETE - Hapus pegawai + akun user ==========
+  // ========== DELETE - Hard delete pegawai ==========
   delete: async (id, user) => {
-    // Ambil data pegawai untuk mendapatkan user_id
+    // Ambil data pegawai
     const [pegawaiRows] = await pool.execute(pegawaiQueries.getById, [id]);
     if (pegawaiRows.length === 0) {
       throw new Error('Pegawai tidak ditemukan');
     }
 
     const pegawai = pegawaiRows[0];
-    const userId = pegawai.user_id;
 
-    // Soft delete pegawai — set deleted_at
-    await pool.execute(pegawaiQueries.softDelete, [id]);
-
-    // Also disable the linked user account (soft-delete by setting deleted_at if column exists)
-    if (userId) {
-      await pool.execute(pegawaiQueries.softDeleteUser, [userId]);
+    // Cek apakah pegawai memiliki peminjaman aktif
+    const [activeCount] = await pool.execute(pegawaiQueries.hasActivePeminjaman, [id]);
+    if (activeCount[0].count > 0) {
+      throw new Error('Pegawai tidak dapat dihapus karena masih memiliki peminjaman aktif. Batalkan atau selesaikan peminjaman terlebih dahulu.');
     }
+
+    // Nullify pegawai_id on all peminjaman records
+    await pool.execute(pegawaiQueries.nullifyPeminjamanPegawai, [id]);
+
+    // Nullify user_id on audit_log records (preserve audit history)
+    await pool.execute(pegawaiQueries.nullifyAuditLogUser, [id]);
+
+    // Hard delete user (pegawai)
+    await pool.execute(pegawaiQueries.hardDeleteUser, [id]);
 
     // Audit log
     await auditService.log({
@@ -179,7 +179,7 @@ const pegawaiService = {
       action: 'DELETE',
       module: 'pegawai',
       recordId: id,
-      details: { pegawai_nama: pegawai.nama, nip: pegawai.nip, method: 'soft_delete' },
+      details: { pegawai_nama: pegawai.nama, nip: pegawai.nip, method: 'hard_delete' },
       ipAddress: user?.ip,
     });
 
@@ -188,24 +188,17 @@ const pegawaiService = {
 
   // ========== RESET PASSWORD - Admin reset password pegawai ==========
   resetPassword: async (id, newPassword) => {
-    // Ambil data pegawai untuk mendapatkan user_id
     const [pegawaiRows] = await pool.execute(pegawaiQueries.getById, [id]);
     if (pegawaiRows.length === 0) {
       throw new Error('Pegawai tidak ditemukan');
     }
 
-    const pegawai = pegawaiRows[0];
-    const userId = pegawai.user_id;
-
-    if (!userId) {
-      throw new Error('Pegawai ini tidak memiliki akun login');
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password baru minimal 6 karakter');
     }
 
-    // Hash password baru
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update password
-    await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, userId]);
+    await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, id]);
 
     return { id, message: 'Password berhasil direset' };
   },

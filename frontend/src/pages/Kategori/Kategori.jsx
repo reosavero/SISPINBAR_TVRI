@@ -18,6 +18,8 @@ import { GiVideoCamera } from 'react-icons/gi';
 import { LuLightbulb, LuCable } from 'react-icons/lu';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import { KATEGORI_DEFAULT, STATUS_BARANG, KONDISI_BARANG } from '../../utils/constants';
+import lokasiService from '../../services/lokasiService';
 import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
@@ -71,6 +73,7 @@ const categoryBgColors = [
 
 const Kategori = () => {
   const [categories, setCategories] = useState([]);
+  const [kategoriLokasiList, setKategoriLokasiList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -102,11 +105,20 @@ const Kategori = () => {
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const fotoInputRef = useRef(null);
   const [barangForm, setBarangForm] = useState({
-    kode_barang: '', nama_barang: '', kategori_id: '', lokasi: '',
+    kode_barang: '', nama_barang: '', kategori_id: '', lokasi: 'Studio Podcast',
     kondisi: 'Baik', status: 'Tersedia', deskripsi: '',
   });
 
-  useEffect(() => { fetchCategories(); }, []);
+  useEffect(() => { fetchCategories(); fetchLokasi(); }, []);
+
+  const fetchLokasi = async () => {
+    try {
+      const res = await lokasiService.getActive();
+      setKategoriLokasiList(res.data || []);
+    } catch {
+      setKategoriLokasiList([]);
+    }
+  };
 
   const fetchCategories = async () => {
     setLoading(true);
@@ -157,6 +169,15 @@ const Kategori = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nama) { toast.error('Nama kategori wajib diisi'); return; }
+    const trimmedNama = form.nama.trim();
+
+    // Cek duplikat nama (client-side)
+    const duplicate = categories.find(c => c.nama.toLowerCase() === trimmedNama.toLowerCase());
+    if (duplicate && (!editItem || duplicate.id !== editItem.id)) {
+      toast.error('Nama kategori sudah digunakan. Silakan gunakan nama lain.');
+      return;
+    }
+
     setSaving(true);
     try {
       if (editItem) {
@@ -203,7 +224,7 @@ const Kategori = () => {
       kode_barang: kode,
       nama_barang: '',
       kategori_id: String(selectedKategori?.id || ''),
-      lokasi: '',
+      lokasi: 'Studio Podcast',
       kondisi: 'Baik',
       status: 'Tersedia',
       jumlah: 1,
@@ -548,11 +569,17 @@ const Kategori = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Lokasi</label>
-                <select value={barangForm.lokasi} onChange={(e) => setBarangForm({ ...barangForm, lokasi: e.target.value })} className="input-field" required>
-                  <option value="">Pilih lokasi</option>
-                  {['Gudang Utama', 'Studio A', 'Studio B', 'Rangkaian Produksi', 'Ruang IT', 'Ruang Berita', 'Ruang Editing', 'Lantai 2', 'Lantai 3', 'Outdoor Kit'].map(l => (
-                    <option key={l} value={l}>{l}</option>
-                  ))}
+                <select value={barangForm.lokasi} onChange={(e) => {
+                  const selectedLokasi = kategoriLokasiList.find(l => l.nama_lokasi === e.target.value);
+                  setBarangForm({ ...barangForm, lokasi: e.target.value, lokasi_id: selectedLokasi ? selectedLokasi.id : null });
+                }} className="input-field" required>
+                  {kategoriLokasiList.length > 0 ? (
+                    kategoriLokasiList.map(l => (
+                      <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}{l.gedung ? ` — ${l.gedung}` : ''}{l.lantai ? ` Lt. ${l.lantai}` : ''}</option>
+                    ))
+                  ) : (
+                    <option value="">Memuat lokasi...</option>
+                  )}
                 </select>
               </div>
 

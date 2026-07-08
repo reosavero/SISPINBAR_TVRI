@@ -16,6 +16,7 @@ const ConfirmDialog = ({
   confirmLabel = 'Ya, Lanjutkan',
   cancelLabel = 'Batal',
   type = 'danger',
+  loading = false,
 }) => {
   const typeConfig = {
     danger: { icon: 'text-red-600 bg-red-100', button: 'danger' },
@@ -55,10 +56,10 @@ const ConfirmDialog = ({
               <h3 className="text-lg font-bold text-gray-800 mb-2">{title}</h3>
               <p className="text-sm text-gray-500 mb-6">{message}</p>
               <div className="flex gap-3 w-full">
-                <Button variant="outline" onClick={onClose} className="flex-1 min-h-[44px]">
+                <Button variant="outline" onClick={onClose} className="flex-1 min-h-[44px]" disabled={loading}>
                   {cancelLabel}
                 </Button>
-                <Button variant={config.button} onClick={onConfirm} className="flex-1 min-h-[44px]">
+                <Button variant={config.button} onClick={onConfirm} className="flex-1 min-h-[44px]" loading={loading}>
                   {confirmLabel}
                 </Button>
               </div>

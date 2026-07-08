@@ -13,7 +13,7 @@ const updateBarangStatus = async (barangId) => {
   if (!barang) return;
 
   const [[borrowed]] = await pool.execute(
-    `SELECT COALESCE(SUM(jumlah), 0) AS total_dipinjam FROM peminjaman WHERE barang_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')`,
+    `SELECT COALESCE(SUM(jumlah), 0) AS total_dipinjam FROM peminjaman WHERE barang_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi')`,
     [barangId]
   );
 
@@ -63,14 +63,14 @@ const barangService = {
       SELECT b.*, k.nama AS kategori_nama,
         (b.jumlah - COALESCE((
           SELECT SUM(p.jumlah) FROM peminjaman p
-          WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')
+          WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi')
         ), 0)) AS tersedia
       FROM barang b
       LEFT JOIN kategori k ON b.kategori_id = k.id
       WHERE b.status IN ('Tersedia', 'Dipinjam')
         AND (b.jumlah - COALESCE((
           SELECT SUM(p.jumlah) FROM peminjaman p
-          WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')
+          WHERE p.barang_id = b.id AND p.status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi')
         ), 0)) > 0
       ORDER BY b.nama_barang ASC
     `);
@@ -80,11 +80,20 @@ const barangService = {
 
   create: async (data, user) => {
     const {
-      kode_barang, nama_barang, kategori_id, lokasi,
+      kode_barang, nama_barang, kategori_id, lokasi, lokasi_id,
       kondisi, status, deskripsi, jumlah, foto,
     } = data;
+
+    // Check for duplicate nama_barang
+    const [existing] = await pool.execute(barangQueries.checkNamaBarang, [nama_barang.trim()]);
+    if (existing.length > 0) {
+      const err = new Error('Nama barang sudah digunakan. Gunakan nama lain.');
+      err.code = 'DUPLICATE_NAME';
+      throw err;
+    }
+
     const [result] = await pool.execute(barangQueries.create, [
-      kode_barang, nama_barang, kategori_id, lokasi,
+      kode_barang, nama_barang, kategori_id, lokasi, lokasi_id || null,
       kondisi || 'Baik', status || 'Tersedia',
       deskripsi || null, jumlah || 1, foto || null,
     ]);
@@ -105,12 +114,21 @@ const barangService = {
 
   update: async (id, data, user) => {
     const {
-      nama_barang, kategori_id, lokasi, kondisi,
+      nama_barang, kategori_id, lokasi, lokasi_id, kondisi,
       status, deskripsi, jumlah, foto,
     } = data;
+
+    // Check for duplicate nama_barang (excluding current record)
+    const [existing] = await pool.execute(barangQueries.checkNamaBarangForUpdate, [nama_barang.trim(), id]);
+    if (existing.length > 0) {
+      const err = new Error('Nama barang sudah digunakan. Gunakan nama lain.');
+      err.code = 'DUPLICATE_NAME';
+      throw err;
+    }
+
     // If foto is not provided, preserve the existing foto in DB
     const updateFields = [
-      nama_barang, kategori_id, lokasi, kondisi,
+      nama_barang, kategori_id, lokasi, lokasi_id || null, kondisi,
       status, deskripsi || null, jumlah || 1,
     ];
     if (foto !== undefined && foto !== '') {

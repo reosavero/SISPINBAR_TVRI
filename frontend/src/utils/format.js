@@ -42,6 +42,45 @@ export const formatDateTime = (dateString) => {
   }).format(date);
 };
 
+// Format tanggal dengan pukul: "12 Januari 2025 pukul 14:30"
+// Jika waktu 00:00 (belum disetujui/diapprove), tampilkan tanggal saja
+export const formatDatePukul = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const tanggal = new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+  const jam = date.getHours();
+  const menit = date.getMinutes();
+  // Jika waktu 00:00, kemungkinan belum disetujui - tampilkan tanggal saja
+  if (jam === 0 && menit === 0) return tanggal;
+  return `${tanggal} pukul ${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`;
+};
+
+// Format jam saja: "14:30"
+// Jika waktu 00:00 (tidak bermakna), kembalikan '-'
+export const formatTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const jam = date.getHours();
+  const menit = date.getMinutes();
+  // Jika waktu 00:00, kemungkinan data migrasi dari DATE - tidak bermakna sebagai jam
+  if (jam === 0 && menit === 0) return '-';
+  return `${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`;
+};
+
+// Format jam saja, selalu tampilkan (termasuk 00:00)
+// Digunakan untuk tanggal_pinjam yang selalu punya waktu valid
+export const formatTimeAlways = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const jam = String(date.getHours()).padStart(2, '0');
+  const menit = String(date.getMinutes()).padStart(2, '0');
+  return `${jam}:${menit}`;
+};
+
 export const generateKodeBarang = (kategori, urutan) => {
   const prefix = kategori.substring(0, 3).toUpperCase();
   return `TVRI-${prefix}-${String(urutan).padStart(4, '0')}`;
@@ -63,7 +102,9 @@ export const getStatusColor = (status) => {
     'Menunggu Persetujuan': 'badge-warning',
     'Disetujui': 'badge-info',
     'Dipinjam': 'badge-primary',
+    'Menunggu Konfirmasi': 'badge-info',
     'Dikembalikan': 'badge-success',
+    'Diterima': 'badge-success',
     'Ditolak': 'badge-danger',
     'Baik': 'badge-success',
     'Rusak Ringan': 'badge-warning',
@@ -99,6 +140,31 @@ export const getBarangFotoUrl = (foto) => {
   if (foto.startsWith('http')) return foto;
   const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
   return `${baseUrl}${foto}`;
+};
+
+export const getPengembalianFotoUrl = (foto) => {
+  if (!foto) return null;
+  if (foto.startsWith('http')) return foto;
+  const baseUrl = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace('/api', '');
+  return `${baseUrl}${foto}`;
+};
+
+export const formatRelativeTime = (dateString) => {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHour / 24);
+
+  if (diffSec < 60) return 'Baru saja';
+  if (diffMin < 60) return `${diffMin} menit lalu`;
+  if (diffHour < 24) return `${diffHour} jam lalu`;
+  if (diffDay === 1) return 'Kemarin';
+  if (diffDay < 7) return `${diffDay} hari lalu`;
+  return formatDateShort(dateString);
 };
 
 export const debounce = (func, wait = 300) => {

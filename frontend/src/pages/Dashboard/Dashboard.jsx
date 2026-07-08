@@ -3,8 +3,8 @@
 // ============================================
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   MdInventory2,
   MdPeople,
@@ -13,43 +13,30 @@ import {
   MdBuild,
   MdToday,
   MdAccessTime,
-  MdCheck,
 } from 'react-icons/md';
 import {
   FiTrendingUp,
   FiActivity,
   FiClock,
   FiChevronDown,
-  FiBell,
-  FiX,
-  FiSettings,
 } from 'react-icons/fi';
 import StatCard from '../../components/cards/StatCard';
 import Badge from '../../components/ui/Badge';
-import Pagination from '../../components/ui/Pagination';
 import { formatDateTime } from '../../utils/format';
 import api from '../../services/api';
-import toast from 'react-hot-toast';
-
-const notifTypeConfig = {
-  peminjaman: { icon: MdAssignment, color: 'text-amber-600', bg: 'bg-amber-100' },
-  pengembalian: { icon: MdAssignmentTurnedIn, color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  persetujuan: { icon: MdCheck, color: 'text-blue-600', bg: 'bg-blue-100' },
-  penolakan: { icon: FiX, color: 'text-red-600', bg: 'bg-red-100' },
-  barang: { icon: FiSettings, color: 'text-purple-600', bg: 'bg-purple-100' },
-  peringatan: { icon: FiX, color: 'text-orange-600', bg: 'bg-orange-100' },
-  info: { icon: FiBell, color: 'text-gray-600', bg: 'bg-gray-100' },
-};
+import { useAuth } from '../../context/AuthContext';
 
 const Dashboard = () => {
+  const { isAdmin, isSuperAdmin, isPegawai } = useAuth();
   const navigate = useNavigate();
-  const notifRef = useRef(null);
+
+  // Dashboard admin/super_admin menampilkan statistik keseluruhan
+  const showAdminDashboard = isAdmin; // admin atau super_admin
 
   const [stats, setStats] = useState(null);
   const [monthlyLoans, setMonthlyLoans] = useState([]);
   const [barangStatus, setBarangStatus] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [activityPagination, setActivityPagination] = useState({ page: 1, totalPages: 1, totalItems: 0, limit: 5 });
   const [availableYears, setAvailableYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [showYearDropdown, setShowYearDropdown] = useState(false);
@@ -57,17 +44,34 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(false);
 
-  // Notification state
-  const [showNotif, setShowNotif] = useState(false);
-  const [notifications, setNotifications] = useState([]);
+  // AbortController ref untuk membatalkan request saat unmount/logout
+  const abortControllerRef = useRef(null);
+  const isMountedRef = useRef(true);
 
+  // Helper: aman update state hanya jika component masih mounted
+  const safeSetState = useCallback((setter) => (value) => {
+    if (isMountedRef.current) setter(value);
+  }, []);
+
+  // Cleanup pada unmount
   useEffect(() => {
-    fetchDashboardData();
+    isMountedRef.current = true;
+    abortControllerRef.current = new AbortController();
+
+    return () => {
+      isMountedRef.current = false;
+      // Batalkan semua request yang sedang berjalan
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {
+    fetchDashboardData();
     fetchActivities();
-  }, [activityPagination.page]);
+  }, []);
 
   useEffect(() => {
     if (availableYears.length > 0) {
@@ -75,29 +79,19 @@ const Dashboard = () => {
     }
   }, [selectedYear]);
 
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
-
-  // Close notification dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (notifRef.current && !notifRef.current.contains(e.target)) {
-        setShowNotif(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const fetchDashboardData = async () => {
+    // Cek token sebelum fetch — jangan fetch jika sudah logout
+    if (!sessionStorage.getItem('token')) return;
     try {
+      const signal = abortControllerRef.current?.signal;
       const [statsRes, statusRes, yearsRes, monthlyRes] = await Promise.all([
-        api.get('/dashboard/stats'),
-        api.get('/dashboard/barang-status'),
-        api.get('/dashboard/available-years'),
-        api.get('/dashboard/monthly-loans'),
+        api.get('/dashboard/stats', { signal }),
+        api.get('/dashboard/barang-status', { signal }),
+        api.get('/dashboard/available-years', { signal }),
+        api.get('/dashboard/monthly-loans', { signal }),
       ]);
+
+      if (!isMountedRef.current) return;
 
       setStats(statsRes.data.data);
       setBarangStatus(statusRes.data.data);
@@ -109,110 +103,43 @@ const Dashboard = () => {
         setSelectedYear(years[0]);
       }
     } catch (err) {
+      // Aborted request saat unmount — biarkan, jangan log error
+      if (err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return;
+      if (!isMountedRef.current) return;
       console.error('Dashboard fetch error:', err);
     }
-    setLoading(false);
+    if (isMountedRef.current) setLoading(false);
   };
 
   const fetchMonthlyLoans = async (year) => {
+    if (!sessionStorage.getItem('token')) return;
     try {
-      const res = await api.get(`/dashboard/monthly-loans?year=${year}`);
+      const signal = abortControllerRef.current?.signal;
+      const res = await api.get(`/dashboard/monthly-loans?year=${year}`, { signal });
+      if (!isMountedRef.current) return;
       setMonthlyLoans(res.data.data);
     } catch (err) {
+      if (err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return;
       // keep existing data
     }
   };
 
   const fetchActivities = useCallback(async () => {
+    if (!sessionStorage.getItem('token')) return;
     setActivityLoading(true);
     try {
-      const res = await api.get(`/dashboard/recent-activity?page=${activityPagination.page}&limit=${activityPagination.limit}`);
-      const result = res.data.data;
-      setActivities(result.data || []);
-      if (result.pagination) {
-        setActivityPagination(prev => ({
-          ...prev,
-          page: result.pagination.page,
-          totalPages: result.pagination.totalPages,
-          totalItems: result.pagination.totalItems,
-        }));
-      }
+      const signal = abortControllerRef.current?.signal;
+      const res = await api.get('/dashboard/recent-activity?page=1&limit=5', { signal });
+      if (!isMountedRef.current) return;
+      setActivities(res.data.data?.data || []);
     } catch (err) {
+      if (err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return;
+      if (!isMountedRef.current) return;
       console.error('Activity fetch error:', err);
       setActivities([]);
     }
-    setActivityLoading(false);
-  }, [activityPagination.page, activityPagination.limit]);
-
-  const fetchNotifications = async () => {
-    try {
-      // Fetch pending peminjaman grouped by pegawai
-      const pendingRes = await api.get('/dashboard/pending-notifications');
-      const pendingData = pendingRes.data.data || [];
-
-      // Fetch recent activity for other types
-      const activityRes = await api.get('/dashboard/recent-activity', { params: { page: 1, limit: 5 } });
-      const activityData = activityRes.data.data || [];
-
-      const notifs = [];
-
-      // Add pending notifications (grouped by pegawai)
-      pendingData.forEach((item, idx) => {
-        const jumlah = Number(item.jumlah);
-        notifs.push({
-          id: `pending-${item.pegawai_id}`,
-          title: jumlah > 1
-            ? `${item.pegawai_nama} mengajukan ${jumlah} peminjaman`
-            : `${item.pegawai_nama} mengajukan peminjaman`,
-          message: jumlah > 1
-            ? item.items
-            : item.items,
-          time: item.waktu_terakhir,
-          read: false,
-          type: 'persetujuan',
-        });
-      });
-
-      // Add recent activity (skip Menunggu Persetujuan since it's in pending)
-      const activities = Array.isArray(activityData) ? activityData : [];
-      activities.forEach((item, idx) => {
-        if (item.status === 'Menunggu Persetujuan') return; // Already shown in pending
-        notifs.push({
-          id: item.id || `activity-${idx}`,
-          title: item.aksi || 'Aktivitas baru',
-          message: item.deskripsi || '',
-          time: item.waktu || new Date().toISOString(),
-          read: true,
-          type: item.tipe || 'info',
-        });
-      });
-
-      setNotifications(notifs);
-    } catch {
-      setNotifications([]);
-    }
-  };
-
-  const handleMarkAllRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
-    toast.success('Semua notifikasi telah ditandai dibaca');
-  };
-
-  const handleNotifClick = (notif) => {
-    setNotifications(notifications.map(n => n.id === notif.id ? { ...n, read: true } : n));
-    const routeMap = {
-      peminjaman: '/peminjaman',
-      pengembalian: '/pengembalian',
-      persetujuan: '/peminjaman',
-      penolakan: '/peminjaman',
-      barang: '/kategori',
-      peringatan: '/peminjaman',
-    };
-    navigate(routeMap[notif.type] || '/dashboard');
-    setShowNotif(false);
-  };
-
-  const unreadCount = notifications.filter(n => !n.read).length;
+    if (isMountedRef.current) setActivityLoading(false);
+  }, []);
 
   const activityIcons = {
     peminjaman: { icon: MdAssignment, color: 'text-amber-600', bg: 'bg-amber-100' },
@@ -224,7 +151,6 @@ const Dashboard = () => {
   const totalLoans = monthlyLoans.reduce((s, m) => s + m.total, 0);
   const avgLoans = monthlyLoans.length > 0 ? Math.round(totalLoans / 12) : 0;
 
-  // Memoized chart data - only compute when monthlyLoans changes
   const chartData = useMemo(() => {
     if (!monthlyLoans || monthlyLoans.length === 0) return null;
 
@@ -259,9 +185,6 @@ const Dashboard = () => {
     };
   }, [monthlyLoans]);
 
-  const handleActivityPageChange = (newPage) => {
-    setActivityPagination(prev => ({ ...prev, page: newPage }));
-  };
 
   if (loading) {
     return (
@@ -275,112 +198,26 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="page-container relative">
-      {/* Header with Notification Bell */}
-      <div className="flex items-start justify-between mb-4 sm:mb-6 gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="page-title">Dashboard</h1>
-          <p className="page-subtitle">Selamat datang di Sistem Peminjaman Barang TVRI Jawa Timur</p>
-        </div>
-
-        {/* Notification Bell */}
-        <div className="relative" ref={notifRef}>
-          <button
-            onClick={() => setShowNotif(!showNotif)}
-            className="relative w-11 h-11 rounded-xl bg-white shadow-sm hover:shadow-md border border-gray-100 flex items-center justify-center transition-all duration-200"
-          >
-            <FiBell className="w-5 h-5 text-gray-500 hover:text-[#005BAC]" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 shadow-sm">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            )}
-          </button>
-
-          {/* Notification Dropdown */}
-          {showNotif && (
-            <div className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-[380px] max-h-[80vh] sm:max-h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50">
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 bg-gradient-to-r from-[#005BAC] to-[#003B71]">
-                <div>
-                  <h3 className="text-sm font-bold text-white">Notifikasi</h3>
-                  <p className="text-[11px] text-white/70">{unreadCount > 0 ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca'}</p>
-                </div>
-                {unreadCount > 0 && (
-                  <button
-                    onClick={handleMarkAllRead}
-                    className="text-[11px] text-white/90 hover:text-white font-medium bg-white/15 px-3 py-1 rounded-lg hover:bg-white/25 transition-colors"
-                  >
-                    Tandai dibaca
-                  </button>
-                )}
-              </div>
-
-              {/* Notification List */}
-              <div className="max-h-[360px] overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="py-10 text-center">
-                    <FiBell className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-                    <p className="text-sm text-gray-400">Tidak ada notifikasi</p>
-                  </div>
-                ) : (
-                  notifications.map((notif) => {
-                    const config = notifTypeConfig[notif.type] || notifTypeConfig.info;
-                    const IconComp = config.icon;
-                    return (
-                      <div
-                        key={notif.id}
-                        onClick={() => handleNotifClick(notif)}
-                        className={`flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-50 ${!notif.read ? 'bg-blue-50/40' : ''}`}
-                      >
-                        <div className={`w-9 h-9 rounded-lg ${config.bg} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-                          <IconComp className={`w-4 h-4 ${config.color}`} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={`text-sm ${!notif.read ? 'font-semibold text-gray-800' : 'font-medium text-gray-600'} truncate`}>
-                              {notif.title}
-                            </p>
-                            {!notif.read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-[10px] text-gray-400 mt-1">{formatDateTime(notif.time)}</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              {/* Footer */}
-              <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
-                <button
-                  onClick={() => { navigate('/riwayat'); setShowNotif(false); }}
-                  className="text-xs text-[#005BAC] hover:underline font-semibold"
-                >
-                  Lihat semua riwayat →
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+    <div className="page-container">
+      {/* Header */}
+      <div className="mb-4 sm:mb-6">
+        <h1 className="page-title">Dashboard</h1>
+        <p className="page-subtitle">Selamat datang di Sistem Peminjaman Barang TVRI Jawa Timur</p>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <StatCard title="Total Barang" value={stats?.totalBarang || 0} icon={MdInventory2} color="primary" />
-        <StatCard title="Barang Tersedia" value={stats?.barangTersedia || 0} icon={MdInventory2} color="success" />
-        <StatCard title="Barang Dipinjam" value={stats?.barangDipinjam || 0} icon={MdAssignment} color="warning" />
-        <StatCard title="Barang Rusak" value={stats?.barangRusak || 0} icon={MdBuild} color="danger" />
+        <StatCard title="Total Barang" value={stats?.totalBarang || 0} icon={MdInventory2} color="primary" onClick={() => navigate('/barang')} />
+        <StatCard title="Barang Tersedia" value={stats?.barangTersedia || 0} icon={MdInventory2} color="success" onClick={() => navigate('/barang?status=Tersedia')} />
+        <StatCard title="Barang Dipinjam" value={stats?.barangDipinjam || 0} icon={MdAssignment} color="warning" onClick={() => navigate('/barang?status=Dipinjam')} />
+        <StatCard title="Barang Rusak" value={stats?.barangRusak || 0} icon={MdBuild} color="danger" onClick={() => navigate('/barang?status=Rusak')} />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
-        <StatCard title="Dalam Perbaikan" value={stats?.barangPerbaikan || 0} icon={MdBuild} color="info" />
-        <StatCard title="Total Pegawai" value={stats?.totalPegawai || 0} icon={MdPeople} color="primary" />
-        <StatCard title="Peminjaman Hari Ini" value={stats?.peminjamanHariIni || 0} icon={MdToday} color="warning" />
-        <StatCard title="Pengembalian Hari Ini" value={stats?.pengembalianHariIni || 0} icon={MdAssignmentTurnedIn} color="success" />
+        <StatCard title="Dalam Perbaikan" value={stats?.barangPerbaikan || 0} icon={MdBuild} color="info" onClick={() => navigate('/barang?status=Dalam Perbaikan')} />
+        <StatCard title="Total Pegawai" value={stats?.totalPegawai || 0} icon={MdPeople} color="primary" onClick={() => navigate(isSuperAdmin ? '/manajemen-user?tab=pegawai' : '/pegawai')} />
+        <StatCard title="Peminjaman Hari Ini" value={stats?.peminjamanHariIni || 0} icon={MdToday} color="warning" onClick={() => navigate('/peminjaman')} />
+        <StatCard title="Pengembalian Hari Ini" value={stats?.pengembalianHariIni || 0} icon={MdAssignmentTurnedIn} color="success" onClick={() => navigate('/pengembalian')} />
       </div>
 
       {/* Charts Row */}
@@ -398,7 +235,6 @@ const Dashboard = () => {
               <p className="text-sm text-gray-500">Total {totalLoans} peminjaman · Rata-rata {avgLoans}/bulan</p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Year Selector */}
               {availableYears.length > 0 && (
                 <div className="relative">
                   <button
@@ -435,7 +271,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* SVG Line Chart */}
           {chartData ? (
             <div className="w-full overflow-x-auto">
               <svg viewBox={`0 0 ${chartData.chartWidth} ${chartData.chartHeight}`} className="w-full" style={{ minWidth: '500px' }}>
@@ -457,7 +292,6 @@ const Dashboard = () => {
                   </filter>
                 </defs>
 
-                {/* Y-axis grid lines & labels */}
                 {Array.from({ length: chartData.yTickCount + 1 }, (_, i) => {
                   const val = i * chartData.yTickStep;
                   const y = chartData.chartPadding.top + chartData.innerHeight - (val / chartData.niceMax) * chartData.innerHeight;
@@ -485,89 +319,21 @@ const Dashboard = () => {
                   );
                 })}
 
-                {/* Area fill under the line */}
-                <path
-                  d={chartData.areaPath}
-                  fill="url(#areaGradient)"
-                />
+                <path d={chartData.areaPath} fill="url(#areaGradient)" />
+                <path d={chartData.linePath} fill="none" stroke="url(#lineGradient)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-                {/* Line */}
-                <path
-                  d={chartData.linePath}
-                  fill="none"
-                  stroke="url(#lineGradient)"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-
-                {/* Data points & hover areas */}
                 {chartData.points.map((point, idx) => (
                   <g key={`point-${idx}`}>
-                    {/* Invisible larger hit area for hover */}
-                    <circle
-                      cx={point.x}
-                      cy={point.y}
-                      r="15"
-                      fill="transparent"
-                      onMouseEnter={() => setHoveredPoint(idx)}
-                      onMouseLeave={() => setHoveredPoint(null)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                    {/* Dot */}
-                    <circle
-                      cx={point.x}
-                      cy={point.y}
-                      r={hoveredPoint === idx ? 5 : 3.5}
-                      fill="#005BAC"
-                      stroke="#fff"
-                      strokeWidth="2"
-                      style={{ transition: 'r 0.15s ease' }}
-                    />
-                    {/* Glow on hover */}
+                    <circle cx={point.x} cy={point.y} r="15" fill="transparent" onMouseEnter={() => setHoveredPoint(idx)} onMouseLeave={() => setHoveredPoint(null)} style={{ cursor: 'pointer' }} />
+                    <circle cx={point.x} cy={point.y} r={hoveredPoint === idx ? 5 : 3.5} fill="#005BAC" stroke="#fff" strokeWidth="2" style={{ transition: 'r 0.15s ease' }} />
                     {hoveredPoint === idx && (
-                      <circle
-                        cx={point.x}
-                        cy={point.y}
-                        r="10"
-                        fill="#005BAC"
-                        opacity="0.15"
-                      />
+                      <>
+                        <circle cx={point.x} cy={point.y} r="10" fill="#005BAC" opacity="0.15" />
+                        <rect x={point.x - 32} y={point.y - 38} width="64" height="24" rx="6" fill="#005BAC" opacity="0.95" />
+                        <text x={point.x} y={point.y - 22} textAnchor="middle" fill="#fff" fontSize="11" fontWeight="600">{point.total}</text>
+                      </>
                     )}
-                    {/* Tooltip on hover */}
-                    {hoveredPoint === idx && (
-                      <g>
-                        <rect
-                          x={point.x - 32}
-                          y={point.y - 38}
-                          width="64"
-                          height="24"
-                          rx="6"
-                          fill="#005BAC"
-                          opacity="0.95"
-                        />
-                        <text
-                          x={point.x}
-                          y={point.y - 22}
-                          textAnchor="middle"
-                          fill="#fff"
-                          fontSize="11"
-                          fontWeight="600"
-                        >
-                          {point.total}
-                        </text>
-                      </g>
-                    )}
-                    {/* X-axis labels */}
-                    <text
-                      x={point.x}
-                      y={chartData.chartHeight - 8}
-                      textAnchor="middle"
-                      fill="#6B7280"
-                      fontSize="10"
-                    >
-                      {point.bulan}
-                    </text>
+                    <text x={point.x} y={chartData.chartHeight - 8} textAnchor="middle" fill="#6B7280" fontSize="10">{point.bulan}</text>
                   </g>
                 ))}
               </svg>
@@ -589,7 +355,6 @@ const Dashboard = () => {
           <h3 className="text-lg font-bold text-gray-800 mb-2">Status Barang</h3>
           <p className="text-sm text-gray-500 mb-6">Distribusi kondisi barang</p>
 
-          {/* Simple Donut */}
           <div className="flex justify-center mb-6">
             <div className="relative w-40 h-40">
               <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
@@ -599,15 +364,7 @@ const Dashboard = () => {
                   const prevOffsets = barangStatus.slice(0, idx).reduce((s, i) => s + (i.total / total) * 100, 0);
                   const dashArray = `${(item.total / total) * 100} ${100 - (item.total / total) * 100}`;
                   return (
-                    <circle
-                      key={idx}
-                      cx="18" cy="18" r="15.9"
-                      fill="none"
-                      stroke={colors[idx]}
-                      strokeWidth="3.8"
-                      strokeDasharray={dashArray}
-                      strokeDashoffset={-prevOffsets}
-                    />
+                    <circle key={idx} cx="18" cy="18" r="15.9" fill="none" stroke={colors[idx]} strokeWidth="3.8" strokeDasharray={dashArray} strokeDashoffset={-prevOffsets} />
                   );
                 })}
               </svg>
@@ -620,7 +377,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Legend */}
           <div className="space-y-3">
             {barangStatus.map((item, idx) => {
               const colors = ['bg-emerald-500', 'bg-amber-500', 'bg-red-500', 'bg-blue-500'];
@@ -654,7 +410,6 @@ const Dashboard = () => {
           <FiActivity className="w-5 h-5 text-[#005BAC]" />
         </div>
 
-        {/* Activity List */}
         <div className="px-4 sm:px-6">
           {activityLoading ? (
             <div className="flex items-center justify-center py-12">
@@ -673,20 +428,15 @@ const Dashboard = () => {
                 const IconComp = config.icon;
                 return (
                   <div key={activity.id} className="flex items-start gap-3 p-3 sm:p-3 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-colors">
-                    {/* Icon */}
                     <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0`}>
                       <IconComp className={`w-4 h-4 sm:w-5 sm:h-5 ${config.color}`} />
                     </div>
-                    {/* Content */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                         <p className="text-[13px] sm:text-sm font-semibold text-gray-800 leading-snug">{activity.aksi}</p>
-                        {activity.status && (
-                          <Badge status={activity.status} />
-                        )}
+                        {activity.status && <Badge status={activity.status} />}
                       </div>
                       <p className="text-xs sm:text-sm text-gray-500 mt-0.5 line-clamp-2 leading-relaxed">{activity.deskripsi}</p>
-                      {/* Waktu di bawah deskripsi (mobile-first) */}
                       <div className="flex items-center gap-1 text-[11px] sm:text-xs text-gray-400 mt-1.5">
                         <FiClock className="w-3 h-3" />
                         <span>{formatDateTime(activity.waktu)}</span>
@@ -699,18 +449,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Pagination */}
-        {activityPagination.totalPages > 1 && (
-          <div className="mt-2">
-            <Pagination
-              currentPage={activityPagination.page}
-              totalPages={activityPagination.totalPages}
-              onPageChange={handleActivityPageChange}
-              totalItems={activityPagination.totalItems}
-              itemsPerPage={activityPagination.limit}
-            />
-          </div>
-        )}
+
       </motion.div>
     </div>
   );

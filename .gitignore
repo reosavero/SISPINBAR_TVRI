@@ -1,12 +1,17 @@
+# ============================================
+# .gitignore - SISPINBAR TVRI Jawa Timur
+# ============================================
+
 # Dependencies
 node_modules/
 dist/
 build/
 
-# Environment
+# Environment (SENSITIVE: contains DB credentials, JWT secret, SMTP password)
 .env
 .env.local
 .env.production
+.env.*
 
 # IDE
 .vscode/
@@ -17,18 +22,49 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 
 # Logs
 *.log
 npm-debug.log*
+logs/
 
-# Uploads (keep .gitkeep for directory structure)
+# ============================================
+# SENSITIVE DATA - DO NOT COMMIT
+# ============================================
+
+# Database dumps (contains user data, passwords, etc.)
+sispinbar_full.sql
+*.sql.dump
+*.sql.bak
+
+# Seed data (contains hashed passwords)
+backend/database/seed.sql
+
+# Test files (may contain test credentials)
+backend/test-*.js
+
+# Uploads - user data (photos, documents)
+backend/uploads/avatars/
+backend/uploads/barang/
+backend/uploads/peminjaman/
+backend/uploads/pengembalian/
 backend/uploads/**/*.jpg
 backend/uploads/**/*.png
 backend/uploads/**/*.jpeg
 backend/uploads/**/*.gif
 backend/uploads/**/*.webp
+backend/uploads/**/*.pdf
+
+# Keep .gitkeep for directory structure
+!backend/uploads/**/.gitkeep
+!backend/uploads/.gitkeep
 
 # Artifacts
 backend/nul
 *.nul
+
+# Temp files
+*.tmp
+*.bak
+*~

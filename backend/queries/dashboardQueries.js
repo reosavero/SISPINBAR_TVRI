@@ -1,6 +1,6 @@
 // ============================================
 // DASHBOARD QUERIES - Sistem Peminjaman Barang TVRI
-// (Updated: pegawai stats + soft delete support)
+// (pegawai merged into users table)
 // ============================================
 
 const dashboardQueries = {
@@ -11,9 +11,12 @@ const dashboardQueries = {
       (SELECT COUNT(*) FROM barang WHERE status = 'Dipinjam' AND deleted_at IS NULL) AS barang_dipinjam,
       (SELECT COUNT(*) FROM barang WHERE status = 'Rusak' AND deleted_at IS NULL) AS barang_rusak,
       (SELECT COUNT(*) FROM barang WHERE status = 'Dalam Perbaikan' AND deleted_at IS NULL) AS barang_perbaikan,
-      (SELECT COUNT(*) FROM pegawai WHERE deleted_at IS NULL) AS total_pegawai,
+      (SELECT COUNT(*) FROM users WHERE role = 'pegawai' AND registration_status = 'approved' AND deleted_at IS NULL) AS total_pegawai,
       (SELECT COUNT(*) FROM peminjaman WHERE DATE(tanggal_pinjam) = CURDATE()) AS peminjaman_hari_ini,
-      (SELECT COUNT(*) FROM pengembalian WHERE DATE(tanggal_kembali_aktual) = CURDATE()) AS pengembalian_hari_ini
+      (SELECT COUNT(*) FROM pengembalian WHERE DATE(tanggal_kembali_aktual) = CURDATE()) AS pengembalian_hari_ini,
+      (SELECT COUNT(*) FROM lokasi WHERE deleted_at IS NULL) AS total_lokasi,
+      (SELECT COUNT(*) FROM lokasi WHERE status = 'Aktif' AND deleted_at IS NULL) AS lokasi_aktif,
+      (SELECT COUNT(*) FROM lokasi WHERE status = 'Tidak Aktif' AND deleted_at IS NULL) AS lokasi_tidak_aktif
   `,
 
   // Pegawai dashboard stats
@@ -73,14 +76,14 @@ const dashboardQueries = {
 
   getPendingNotifications: `
     SELECT
-      pg.id AS pegawai_id,
-      pg.nama AS pegawai_nama,
+      u.id AS pegawai_id,
+      u.nama AS pegawai_nama,
       COUNT(*) AS jumlah,
       GROUP_CONCAT(CONCAT(b.nama_barang, ' (', p.nomor_peminjaman, ')') ORDER BY p.created_at DESC SEPARATOR ', ') AS items,
       MIN(p.created_at) AS waktu_awal,
       MAX(p.created_at) AS waktu_terakhir
     FROM peminjaman p
-    LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+    LEFT JOIN users u ON p.pegawai_id = u.id
     LEFT JOIN barang b ON p.barang_id = b.id
     WHERE p.status = 'Menunggu Persetujuan'
     GROUP BY p.pegawai_id
@@ -99,7 +102,7 @@ const dashboardQueries = {
           WHEN p.status = 'Dikembalikan' THEN 'Peminjaman Selesai'
           ELSE 'Peminjaman'
         END AS aksi,
-        CONCAT(pg.nama, ' meminjam ', b.nama_barang, ' (', p.nomor_peminjaman, ')') AS deskripsi,
+        CONCAT(u.nama, ' meminjam ', b.nama_barang, ' (', p.nomor_peminjaman, ')') AS deskripsi,
         p.status,
         p.created_at AS waktu,
         CASE
@@ -111,7 +114,7 @@ const dashboardQueries = {
           ELSE 'peminjaman'
         END AS tipe
       FROM peminjaman p
-      LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+      LEFT JOIN users u ON p.pegawai_id = u.id
       LEFT JOIN barang b ON p.barang_id = b.id
 
       UNION ALL
@@ -119,13 +122,13 @@ const dashboardQueries = {
       SELECT
         CONCAT('pengembalian_', pk.id) AS id,
         'Pengembalian Barang' AS aksi,
-        CONCAT(pg.nama, ' mengembalikan ', b.nama_barang, ' (', p.nomor_peminjaman, ')') AS deskripsi,
+        CONCAT(u.nama, ' mengembalikan ', b.nama_barang, ' (', p.nomor_peminjaman, ')') AS deskripsi,
         'Dikembalikan' AS status,
         pk.created_at AS waktu,
         'pengembalian' AS tipe
       FROM pengembalian pk
       LEFT JOIN peminjaman p ON pk.peminjaman_id = p.id
-      LEFT JOIN pegawai pg ON p.pegawai_id = pg.id
+      LEFT JOIN users u ON p.pegawai_id = u.id
       LEFT JOIN barang b ON p.barang_id = b.id
     ) AS activity
     ORDER BY waktu DESC

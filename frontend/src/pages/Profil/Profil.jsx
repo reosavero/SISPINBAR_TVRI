@@ -62,8 +62,11 @@ const Profil = () => {
   useEffect(() => {
     // Fetch real stats from dashboard
     const fetchStats = async () => {
+      // Jangan fetch jika sudah logout
+      if (!sessionStorage.getItem('token')) return;
       try {
         const res = await api.get('/dashboard/stats');
+        if (!sessionStorage.getItem('token')) return; // Cek lagi setelah async
         const d = res.data.data;
         setStats({
           totalPeminjaman: d.peminjamanHariIni || 0,

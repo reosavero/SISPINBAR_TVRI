@@ -1,5 +1,6 @@
 // ============================================
 // SIDEBAR COMPONENT - Sistem Peminjaman Barang TVRI
+// Updated: Super Admin Role System (3 roles)
 // Mobile-Responsive Drawer Sidebar
 // ============================================
 
@@ -14,8 +15,15 @@ import {
   MdHistory,
   MdLogout,
   MdClose,
+  MdAdminPanelSettings,
+  MdInventory2,
+  MdTrackChanges,
+  MdSettings,
+  MdAutorenew,
+  MdLocationOn,
 } from 'react-icons/md';
-import { APP_NAME, APP_FULL_NAME, APP_ORGANIZATION, SIDEBAR_MENU_ADMIN, SIDEBAR_MENU_PEGAWAI } from '../../utils/constants';
+import { APP_NAME, APP_FULL_NAME, APP_ORGANIZATION, SIDEBAR_MENU_SUPER_ADMIN, SIDEBAR_MENU_ADMIN, SIDEBAR_MENU_PEGAWAI, ROLE_LABELS, ROLE_COLORS } from '../../utils/constants';
+import logoTvri from '../../assets/logo-tvri.svg';
 import { useAuth } from '../../context/AuthContext';
 import { getInitials, getAvatarUrl } from '../../utils/format';
 
@@ -26,16 +34,31 @@ const iconMap = {
   MdAssignment: MdAssignment,
   MdAssignmentTurnedIn: MdAssignmentTurnedIn,
   MdHistory: MdHistory,
+  MdAdminPanelSettings: MdAdminPanelSettings,
+  MdInventory2: MdInventory2,
+  MdTrackChanges: MdTrackChanges,
+  MdSettings: MdSettings,
+  MdAutorenew: MdAutorenew,
+  MdLocationOn: MdLocationOn,
 };
 
 const Sidebar = ({ isOpen, onClose }) => {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isSuperAdmin, isAdmin, isPegawai, roleName } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [imgError, setImgError] = useState(false);
 
   // Pilih menu berdasarkan role
-  const sidebarMenu = isAdmin ? SIDEBAR_MENU_ADMIN : SIDEBAR_MENU_PEGAWAI;
+  const getSidebarMenu = () => {
+    if (isSuperAdmin) return SIDEBAR_MENU_SUPER_ADMIN;
+    if (isAdmin) return SIDEBAR_MENU_ADMIN;
+    return SIDEBAR_MENU_PEGAWAI;
+  };
+  const sidebarMenu = getSidebarMenu();
+
+  // Get role color scheme
+  const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.pegawai;
+  const roleLabel = ROLE_LABELS[user?.role] || roleName;
 
   // Compute avatar URL directly from user context
   const avatarSrc = user?.avatar ? getAvatarUrl(user.avatar) : null;
@@ -63,8 +86,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   }, [isOpen]);
 
   const handleLogout = () => {
+    onClose?.();
     logout();
-    window.location.href = '/login';
+    navigate('/login', { replace: true });
   };
 
   const handleImgError = () => {
@@ -72,7 +96,6 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const handleNavClick = () => {
-    // Close sidebar on mobile after navigation
     onClose?.();
   };
 
@@ -83,7 +106,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile overlay - prevents body scroll and catches outside clicks */}
+      {/* Mobile overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
@@ -106,9 +129,11 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="p-4 sm:p-5 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#005BAC] to-[#003B71] flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TV</span>
-              </div>
+              <img
+                src={logoTvri}
+                alt="Logo TVRI"
+                className="w-10 h-10 rounded-xl object-contain"
+              />
               <div>
                 <h1 className="text-sm font-bold text-[#003B71]">{APP_NAME}</h1>
                 <p className="text-[10px] text-gray-400">{APP_FULL_NAME}</p>
@@ -170,14 +195,16 @@ const Sidebar = ({ isOpen, onClose }) => {
                   onError={handleImgError}
                 />
               ) : (
-                <span className="text-white text-xs font-bold">{getInitials(user?.nama || 'Admin')}</span>
+                <span className="text-white text-xs font-bold">{getInitials(user?.nama || 'User')}</span>
               )}
             </div>
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-semibold text-gray-800 truncate">{user?.nama || 'Admin'}</p>
-              <p className="text-[10px] text-gray-400 truncate">
-                {isAdmin ? 'Administrator' : `@${user?.username || ''}`}
-              </p>
+              <p className="text-sm font-semibold text-gray-800 truncate">{user?.nama || 'User'}</p>
+              {/* Role Badge */}
+              <span className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${roleColor.bg} ${roleColor.text} border ${roleColor.border}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${roleColor.dot}`}></span>
+                {roleLabel}
+              </span>
             </div>
           </button>
 

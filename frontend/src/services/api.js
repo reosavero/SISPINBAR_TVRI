@@ -14,10 +14,10 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - attach token
+// Request interceptor - attach token dari sessionStorage
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -30,12 +30,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.code === 'ERR_CANCELED' || error.code === 'ECONNABORTED' || error.name === 'CanceledError') {
+      // Request dibatalkan secara sengaja (AbortController) — bukan error
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      // Jangan hard reload, biarkan React yang handle redirect
-      // AuthContext akan detect user=null → redirect ke /login via ProtectedRoute
-      window.dispatchEvent(new Event('auth-expired'));
+      // Hanya dispatch event jika memang sedang logged-in (bukan saat proses logout)
+      const isLoggingOut = !sessionStorage.getItem('token');
+      if (!isLoggingOut) {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        window.dispatchEvent(new Event('auth-expired'));
+      }
     }
     return Promise.reject(error);
   }

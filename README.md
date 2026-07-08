@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-2.1.0-blue)
 ![React](https://img.shields.io/badge/React-19-61DAFB)
 ![Node](https://img.shields.io/badge/Node.js-18+-339933)
 ![MySQL](https://img.shields.io/badge/MySQL-8.0-4479A1)
@@ -19,6 +19,7 @@
 SISPINBAR adalah aplikasi web enterprise yang dirancang untuk mengelola:
 - 📦 Data Barang Inventaris
 - 📂 Kategori Barang
+- 📍 Kelola Lokasi Barang
 - 👥 Data Pegawai
 - 📋 Peminjaman Barang
 - 🔄 Pengembalian Barang
@@ -128,6 +129,9 @@ mysql -u root -p
 # Atau jalankan init script
 cd backend
 npm run init-db
+
+# Atau jalankan migrasi v6 (Super Admin)
+npm run migrate:v6
 ```
 
 Atau manual:
@@ -150,6 +154,24 @@ npm install
 # Inisialisasi database
 npm run init-db
 
+# Jalankan migrasi v6 (Super Admin role system)
+npm run migrate:v6
+
+# Jalankan migrasi v7 (Lokasi module)
+npm run migrate:v7
+
+# Jalankan migrasi v8 (Pengembalian reject feature)
+npm run migrate:v8
+
+# Jalankan migrasi v9 (Login attempts & account locking)
+npm run migrate:v9
+
+# Jalankan migrasi v10 (Kategori unique constraint)
+npm run migrate:v10
+
+# Jalankan migrasi v11 (Registrasi pegawai & approval)
+npm run migrate:v11
+
 # Jalankan server
 npm run dev
 ```
@@ -170,15 +192,16 @@ npm run dev
 
 Frontend berjalan di: `http://localhost:3000`
 
-### 4. Login Admin
+### 4. Login
 
-```
-Username: admin
-Password: admin123
-```
+| Role | Username | Password |
+|------|----------|----------|
+| Super Admin | `superadmin` | `superadmin123` |
+| Admin | `admin` | `admin123` |
 
 > **Catatan:** Setiap pegawai baru ditambahkan oleh admin melalui menu Data Pegawai.
 > Admin menginput data pegawai beserta username dan password untuk login pegawai.
+> ⚠️ Segera ganti password default setelah login!
 
 ## 🎨 Tema UI
 
@@ -227,9 +250,21 @@ Password: admin123
 | PUT | `/api/peminjaman/:id/reject` | Tolak Peminjaman *(admin only)* |
 | **Pengembalian** | | |
 | GET | `/api/pengembalian` | List Pengembalian (pegawai: hanya milik sendiri) |
+| GET | `/api/pengembalian/:id` | Detail Pengembalian |
 | POST | `/api/pengembalian` | Buat Pengembalian |
+| PUT | `/api/pengembalian/:id/confirm` | Terima Pengembalian *(admin only)* |
+| PUT | `/api/pengembalian/:id/reject` | Tolak Pengembalian *(admin only)* |
 | **Riwayat** | | |
 | GET | `/api/riwayat` | List Riwayat (pegawai: hanya milik sendiri) |
+| DELETE | `/api/riwayat/:id` | Hapus Riwayat *(super_admin only)* |
+| **Archive** | | |
+| GET | `/api/archive/years` | Daftar tahun arsip *(admin+)* |
+| GET | `/api/archive/months` | Daftar bulan arsip per tahun *(admin+)* |
+| GET | `/api/archive/data` | Data arsip per bulan *(admin+)* |
+| POST | `/api/archive/process` | Trigger arsip manual *(super_admin only)* |
+| GET | `/api/archive/export/excel` | Export arsip ke Excel *(admin+)* |
+| GET | `/api/archive/delete/count` | Preview jumlah data yang akan dihapus *(super_admin only)* |
+| DELETE | `/api/archive/bulk` | Hapus semua riwayat selesai per bulan *(super_admin only)* |
 
 ## 🗃️ Database Schema
 
@@ -273,50 +308,103 @@ Password: admin123
 
 ## 🔐 Alur Login & Role
 
+### Super Admin
+- Username: `superadmin` | Password: `superadmin123`
+- Akses penuh: Dashboard, Manajemen User, Barang, Kategori, Pegawai, Peminjaman, Pengembalian, Riwayat, Activity Log, System Settings
+- Dapat membuat/mengedit/menghapus akun Admin
+- Dapat mengelola seluruh sistem
+- ⚠️ Tidak dapat dihapus/dinonaktifkan/ubah role melalui aplikasi
+- ⚠️ Hanya ada 1 akun Super Admin
+
 ### Admin
 - Username: `admin` | Password: `admin123`
-- Akses penuh: Dashboard, Barang, Kategori, Pegawai, Peminjaman, Pengembalian, Riwayat
-- Dapat membuat peminjaman untuk pegawai mana pun
-- Dapat menyetujui/menolak peminjaman
-- Dapat mengelola data pegawai (termasuk buat akun & reset password)
+- Akses: Dashboard, Kategori, Pegawai, Barang, Peminjaman, Pengembalian, Riwayat, Activity Log
+- Dapat membuat/mengedit/menghapus pegawai
+- Tidak dapat mengelola akun Admin lain
+- Tidak dapat mengakses System Settings
 
 ### Pegawai
-- Username & Password didaftarkan oleh Admin
-- Akses terbatas: Dashboard, Peminjaman Saya, Pengembalian, Riwayat Saya
+- Username & Password didaftarkan oleh Admin/Super Admin
+- Akses terbatas: Dashboard, Ajukan Peminjaman, Barang, Riwayat Saya, Perpanjangan
 - Hanya melihat peminjaman/pengembalian/riwayat miliknya sendiri
-- Dapat mengajukan peminjaman barang (auto-assign pegawai_id)
 - Tidak dapat approve/reject peminjaman
-- Tidak dapat mengakses menu Barang, Kategori, Pegawai
 
 ### Alur Pendaftaran Pegawai
 
-1. Admin login ke sistem
-2. Admin membuka menu **Data Pegawai**
-3. Admin mengklik **Tambah Pegawai**
-4. Admin mengisi data pegawai: NIP, Nama, Jabatan, Divisi, Email, Nomor HP
-5. Admin mengisi **Username** dan **Password** untuk akun login pegawai
-6. Pegawai dapat login menggunakan username dan password yang didaftarkan admin
-
-```
-┌──────────┐        ┌──────────┐        ┌──────────┐
-│  ADMIN   │───────>│  INPUT   │───────>│  PEGAWAI │
-│  Login   │        │  DATA +  │        │  DAPAT   │
-│          │        │  AKUN    │        │  LOGIN   │
-└──────────┘        └──────────┘        └──────────┘
-```
+1. Admin/Super Admin login ke sistem
+2. Membuka menu **Data Pegawai**
+3. Mengisi data pegawai: NIP, Nama, Jabatan, Divisi, Email, Nomor HP
+4. Mengisi **Username** dan **Password** untuk akun login pegawai
+5. Pegawai dapat login menggunakan username dan password yang didaftarkan
 
 ### Menu Berdasarkan Role
 
-| Menu | Admin | Pegawai |
-|------|-------|----------|
-| Dashboard | ✅ | ✅ |
-| Barang | ✅ | ❌ |
-| Kategori | ✅ | ❌ |
-| Pegawai | ✅ | ❌ |
-| Peminjaman | ✅ (semua) | ✅ (milik sendiri) |
-| Pengembalian | ✅ (semua) | ✅ (milik sendiri) |
-| Riwayat | ✅ (semua) | ✅ (milik sendiri) |
-| Profil | ✅ | ✅ |
+| Menu | Super Admin | Admin | Pegawai |
+|------|-------------|-------|---------|
+| Dashboard | ✅ | ✅ | ✅ |
+| Manajemen User | ✅ | ❌ | ❌ |
+| Barang | ✅ | ✅ | ✅ (lihat) |
+| Kategori | ✅ | ✅ | ❌ |
+| Kelola Lokasi | ✅ | ✅ | ❌ |
+| Peminjaman | ✅ (semua) | ✅ (semua) | ✅ (milik sendiri) |
+| Pengembalian | ✅ (semua) | ✅ (semua) | ✅ (milik sendiri) |
+| Riwayat | ✅ (semua + hapus) | ✅ (semua) | ✅ (milik sendiri) |
+| Activity Log | ✅ | ✅ | ❌ |
+| System Settings | ✅ | ❌ | ❌ |
+| Activity Log | ✅ | ✅ | ❌ |
+| System Settings | ✅ | ❌ | ❌ |
+| Profil | ✅ | ✅ | ✅ |
+
+### 🔒 System Settings (Super Admin Only)
+
+| Setting | Fungsi | Status Integrasi |
+|---------|--------|------------------|
+| Nama Aplikasi | Label app di header/sidebar | ✅ Terintegrasi |
+| Nama Lengkap Aplikasi | Judul halaman | ✅ Terintegrasi |
+| Nama Organisasi | Nama instansi | ✅ Terintegrasi |
+| Session Timeout (jam) | Durasi token JWT aktif setelah login | ✅ Terintegrasi (dibaca dinamis dari DB) |
+| Maksimal Percobaan Login | Batas gagal login sebelum akun terkunci | ✅ Terintegrasi (30 menit lockout) |
+| Default Password | Password default akun baru | ⚙️ Tersimpan di DB |
+
+### 🛡️ Fitur Keamanan
+
+- **Session Timeout**: Dibaca dari `system_settings` secara dinamis saat login. Rentang 1–168 jam. Berlaku untuk login baru.
+- **Account Locking**: Jika gagal login melebihi `max_login_attempts`, akun terkunci selama 30 menit. Counter direset setelah login berhasil.
+- **Login Attempt Tracking**: Kolom `login_attempts` dan `locked_until` di tabel `users`.
+- **Email Notification**: Notifikasi email otomatis saat registrasi disetujui/ditolak. Konfigurasi via `.env`.
+
+### 📧 Konfigurasi Email (Gmail SMTP)
+
+Tambahkan konfigurasi berikut di `backend/.env`:
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=xxxx-xxxx-xxxx-xxxx   ← App Password 16 karakter
+SMTP_FROM=your-email@gmail.com
+FRONTEND_URL=http://localhost:5173
+```
+
+#### Cara Membuat Gmail App Password:
+
+1. Buka **https://myaccount.google.com**
+2. Pastikan **2-Step Verification** sudah aktif
+3. Buka **https://myaccount.google.com/apppasswords**
+4. Pilih **Other (Custom name)** → ketik `SISPINBAR`
+5. Klik **Generate** → salin 16 karakter password
+6. Tempelkan ke `SMTP_PASS` di `.env` (tanpa spasi)
+
+#### Test Konfigurasi Email:
+
+```bash
+cd backend
+npm run test-email email-tujuan@gmail.com
+```
+
+Email dikirim saat:
+- ✅ Registrasi **disetujui** admin → email berisi konfirmasi + link login
+- ❌ Registrasi **ditolak** admin → email berisi alasan penolakan
 
 ## 👨‍💻 Standar Kode
 

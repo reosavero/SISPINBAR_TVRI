@@ -36,14 +36,34 @@ const kategoriService = {
 
   create: async (data) => {
     const { nama, deskripsi } = data;
-    const [result] = await pool.execute(kategoriQueries.create, [nama, deskripsi || null]);
-    return { id: result.insertId, ...data };
+
+    // Cek duplikat nama kategori
+    const [existing] = await pool.execute(
+      'SELECT id FROM kategori WHERE nama = ?',
+      [nama.trim()]
+    );
+    if (existing.length > 0) {
+      throw new Error('Nama kategori sudah digunakan. Silakan gunakan nama lain.');
+    }
+
+    const [result] = await pool.execute(kategoriQueries.create, [nama.trim(), deskripsi && deskripsi.trim() || null]);
+    return { id: result.insertId, nama: nama.trim(), deskripsi: deskripsi && deskripsi.trim() || null };
   },
 
   update: async (id, data) => {
     const { nama, deskripsi } = data;
-    await pool.execute(kategoriQueries.update, [nama, deskripsi || null, id]);
-    return { id, ...data };
+
+    // Cek duplikat nama kategori (kecuali dirinya sendiri)
+    const [existing] = await pool.execute(
+      'SELECT id FROM kategori WHERE nama = ? AND id != ?',
+      [nama.trim(), id]
+    );
+    if (existing.length > 0) {
+      throw new Error('Nama kategori sudah digunakan. Silakan gunakan nama lain.');
+    }
+
+    await pool.execute(kategoriQueries.update, [nama.trim(), deskripsi && deskripsi.trim() || null, id]);
+    return { id, nama: nama.trim(), deskripsi: deskripsi && deskripsi.trim() || null };
   },
 
   delete: async (id) => {

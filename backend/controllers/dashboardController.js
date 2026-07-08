@@ -3,6 +3,7 @@
 // ============================================
 
 const dashboardService = require('../services/dashboardService');
+const lokasiService = require('../services/lokasiService');
 
 const dashboardController = {
   getStats: async (req, res) => {
@@ -17,10 +18,7 @@ const dashboardController = {
   // Pegawai dashboard stats
   getPegawaiStats: async (req, res) => {
     try {
-      if (!req.user.pegawai_id) {
-        return res.status(403).json({ success: false, message: 'Akses ditolak' });
-      }
-      const result = await dashboardService.getPegawaiStats(req.user.pegawai_id);
+      const result = await dashboardService.getPegawaiStats(req.user.id);
       res.json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -30,12 +28,9 @@ const dashboardController = {
   // Pegawai recent peminjaman
   getPegawaiRecentPeminjaman: async (req, res) => {
     try {
-      if (!req.user.pegawai_id) {
-        return res.status(403).json({ success: false, message: 'Akses ditolak' });
-      }
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 5;
-      const result = await dashboardService.getPegawaiRecentPeminjaman(req.user.pegawai_id, page, limit);
+      const result = await dashboardService.getPegawaiRecentPeminjaman(req.user.id, page, limit);
       res.json({ success: true, data: result });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
@@ -84,6 +79,17 @@ const dashboardController = {
     try {
       const result = await dashboardService.getAvailableYears();
       res.json({ success: true, data: result });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  // Lokasi stats for dashboard
+  getLokasiStats: async (req, res) => {
+    try {
+      const stats = await lokasiService.getStats();
+      const topLokasi = await lokasiService.getTopLokasi(5);
+      res.json({ success: true, data: { ...stats, topLokasi } });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
     }

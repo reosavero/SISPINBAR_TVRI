@@ -1,10 +1,11 @@
 // ============================================
 // PERPANJANGAN ROUTES - Sistem Peminjaman Barang TVRI
+// Updated: Role hierarchy (super_admin + admin for approve/reject)
 // ============================================
 
 const express = require('express');
 const router = express.Router();
-const { auth, authorize } = require('../middleware/auth');
+const { auth, adminAndAbove } = require('../middleware/auth');
 const perpanjanganController = require('../controllers/perpanjanganController');
 
 // Semua route memerlukan autentikasi
@@ -19,10 +20,10 @@ router.get('/:id', perpanjanganController.getById);
 // Ajukan perpanjangan (pegawai atau admin)
 router.post('/', perpanjanganController.create);
 
-// Admin: approve perpanjangan
-router.put('/:id/approve', authorize('admin'), perpanjanganController.approve);
+// Admin & super_admin: approve perpanjangan
+router.put('/:id/approve', adminAndAbove, perpanjanganController.approve);
 
-// Admin: reject perpanjangan
-router.put('/:id/reject', authorize('admin'), perpanjanganController.reject);
+// Admin & super_admin: reject perpanjangan
+router.put('/:id/reject', adminAndAbove, perpanjanganController.reject);
 
 module.exports = router;
