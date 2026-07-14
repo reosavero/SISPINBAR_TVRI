@@ -8,11 +8,13 @@ const router = express.Router();
 const { auth, adminAndAbove } = require('../middleware/auth');
 const lokasiController = require('../controllers/lokasiController');
 
-// Semua route memerlukan autentikasi
+// Public — untuk halaman registrasi (tanpa auth)
+router.get('/active', lokasiController.getActive);
+
+// Semua route di bawah memerlukan autentikasi
 router.use(auth);
 
 // GET — semua role bisa melihat (untuk dropdown)
-router.get('/active', lokasiController.getActive);
 router.get('/stats', lokasiController.getStats);
 router.get('/:id/barang', lokasiController.getBarangByLokasi);
 router.get('/:id', lokasiController.getById);

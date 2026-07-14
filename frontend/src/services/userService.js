@@ -54,6 +54,12 @@ const userService = {
     return response.data;
   },
 
+  // Get pegawai by jabatan or divisi
+  getByJabatanOrDivisi: async (params = {}) => {
+    const response = await api.get('/users/by-jabatan-divisi', { params });
+    return response.data;
+  },
+
   // Reset password
   resetPassword: async (id, newPassword) => {
     const response = await api.put(`/users/${id}/reset-password`, { newPassword });

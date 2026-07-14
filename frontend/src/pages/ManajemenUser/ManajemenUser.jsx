@@ -7,15 +7,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiShield, FiUserCheck, FiUserX, FiKey, FiUsers, FiUser, FiChevronDown, FiLock, FiMail, FiPhone, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiShield, FiUserCheck, FiUserX, FiUsers, FiUser, FiChevronDown, FiLock, FiMail, FiPhone, FiClock, FiCheck, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { MdAdminPanelSettings, MdPeople, MdPersonAdd } from 'react-icons/md';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
-import { ROLE_LABELS, ROLE_COLORS, DIVISI, JABATAN } from '../../utils/constants';
+import { ROLE_LABELS, ROLE_COLORS } from '../../utils/constants';
+import { useMasterData } from '../../context/MasterDataContext';
 import { getInitials, getAvatarUrl } from '../../utils/format';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
@@ -23,6 +25,7 @@ import pegawaiService from '../../services/pegawaiService';
 
 const ManajemenUser = () => {
   const { user: currentUser } = useAuth();
+  const { jabatanList, divisiList } = useMasterData();
   const [searchParams] = useSearchParams();
   const initialTab = searchParams.get('tab') || 'admin';
   const validTabs = ['admin', 'pegawai', 'all'];
@@ -39,7 +42,6 @@ const ManajemenUser = () => {
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showResetModal, setShowResetModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -52,7 +54,18 @@ const ManajemenUser = () => {
     password: '',
   });
 
-  const [resetPassword, setResetPassword] = useState('');
+  const [editForm, setEditForm] = useState({
+    username: '',
+    nama: '',
+    nip: '',
+    email: '',
+    jabatan: '',
+    divisi: '',
+    nomor_hp: '',
+  });
+
+  // Edit user password toggle
+  const [editResetPassword, setEditResetPassword] = useState({ enabled: false, newPassword: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
 
   // Tambah Pegawai state
@@ -147,19 +160,17 @@ const ManajemenUser = () => {
 
   const handleOpenEdit = (user) => {
     setSelectedUser(user);
-    setForm({
+    setEditForm({
       username: user.username || '',
-      email: user.email || '',
       nama: user.nama || '',
-      password: '',
+      nip: user.nip || '',
+      email: user.email || '',
+      jabatan: user.jabatan || '',
+      divisi: user.divisi || '',
+      nomor_hp: user.nomor_hp || '',
     });
+    setEditResetPassword({ enabled: false, newPassword: '', confirmPassword: '' });
     setShowEditModal(true);
-  };
-
-  const handleOpenResetPassword = (user) => {
-    setSelectedUser(user);
-    setResetPassword('');
-    setShowResetModal(true);
   };
 
   const handleOpenDelete = (user) => {
@@ -192,43 +203,43 @@ const ManajemenUser = () => {
 
   const handleEdit = async (e) => {
     e.preventDefault();
-    if (!form.nama) {
+    if (!editForm.nama) {
       toast.error('Nama wajib diisi');
       return;
     }
+    if (!editForm.username || editForm.username.length < 3) {
+      toast.error('Username minimal 3 karakter');
+      return;
+    }
+    if (editResetPassword.enabled) {
+      if (!editResetPassword.newPassword) { toast.error('Password baru wajib diisi'); return; }
+      if (editResetPassword.newPassword.length < 6) { toast.error('Password baru minimal 6 karakter'); return; }
+      if (editResetPassword.newPassword !== editResetPassword.confirmPassword) { toast.error('Konfirmasi password tidak cocok'); return; }
+    }
+
     setSaving(true);
     try {
-      const data = { nama: form.nama, email: form.email || null };
-      if (form.password) {
-        if (form.password.length < 6) {
-          toast.error('Password minimal 6 karakter');
-          setSaving(false);
-          return;
-        }
-        data.password = form.password;
+      const data = {
+        username: editForm.username.toLowerCase().replace(/[^a-z0-9._-]/g, ''),
+        nama: editForm.nama,
+        email: editForm.email || null,
+        nip: editForm.nip || null,
+        jabatan: editForm.jabatan || null,
+        divisi: editForm.divisi || null,
+        nomor_hp: editForm.nomor_hp || null,
+      };
+
+      // Password change
+      if (editResetPassword.enabled) {
+        data.password = editResetPassword.newPassword;
       }
+
       await api.put(`/users/${selectedUser.id}`, data);
-      toast.success('User berhasil diperbarui');
+      toast.success(editResetPassword.enabled ? 'User dan password berhasil diperbarui' : 'User berhasil diperbarui');
       setShowEditModal(false);
       fetchUsers();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal memperbarui user');
-    }
-    setSaving(false);
-  };
-
-  const handleResetPassword = async () => {
-    if (!resetPassword || resetPassword.length < 6) {
-      toast.error('Password baru minimal 6 karakter');
-      return;
-    }
-    setSaving(true);
-    try {
-      await api.put(`/users/${selectedUser.id}/reset-password`, { newPassword: resetPassword });
-      toast.success('Password berhasil direset');
-      setShowResetModal(false);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Gagal mereset password');
     }
     setSaving(false);
   };
@@ -656,9 +667,7 @@ const ManajemenUser = () => {
                             <button onClick={() => handleToggleActive(user)} className={`p-1.5 rounded-lg transition-colors ${user.is_active ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-emerald-50 text-emerald-600'}`} title={user.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
                               {user.is_active ? <FiUserX className="w-4 h-4" /> : <FiUserCheck className="w-4 h-4" />}
                             </button>
-                            <button onClick={() => handleOpenResetPassword(user)} className="p-1.5 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="Reset Password">
-                              <FiKey className="w-4 h-4" />
-                            </button>
+
                             <button onClick={() => handleOpenDelete(user)} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors" title="Hapus">
                               <FiTrash2 className="w-4 h-4" />
                             </button>
@@ -714,9 +723,7 @@ const ManajemenUser = () => {
                       <button onClick={() => handleToggleActive(user)} className={`p-2 rounded-lg transition-colors touch-manipulation ${user.is_active ? 'hover:bg-gray-100 text-gray-500' : 'hover:bg-emerald-50 text-emerald-600'}`}>
                         {user.is_active ? <FiUserX className="w-4 h-4" /> : <FiUserCheck className="w-4 h-4" />}
                       </button>
-                      <button onClick={() => handleOpenResetPassword(user)} className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors touch-manipulation">
-                        <FiKey className="w-4 h-4" />
-                      </button>
+
                       <button onClick={() => handleOpenDelete(user)} className="p-2 rounded-lg hover:bg-red-50 text-red-500 transition-colors touch-manipulation">
                         <FiTrash2 className="w-4 h-4" />
                       </button>
@@ -773,24 +780,116 @@ const ManajemenUser = () => {
       </Modal>
 
       {/* Edit User Modal */}
-      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit User" size="md">
+      <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={`Edit ${selectedUser?.role === 'pegawai' ? 'Pegawai' : 'Admin'}`} size="lg">
         <form onSubmit={handleEdit}>
-          <div className="space-y-4">
-            <Input label="Nama Lengkap" name="nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Masukkan nama lengkap" required />
-            <Input label="Email" name="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="Email (opsional)" />
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password Baru <span className="text-gray-400 font-normal">(kosongkan jika tidak ingin mengubah)</span></label>
-              <input
-                type="password"
-                name="password"
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="Minimal 6 karakter"
-                className="input-field"
-                minLength={6}
-              />
+          {/* Section: Akun Login */}
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
+                <FiLock className="w-3.5 h-3.5 text-[#005BAC]" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800">Akun Login</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Username</label>
+                <div className="relative">
+                  <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input type="text" value={editForm.username} onChange={(e) => setEditForm({ ...editForm, username: e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, '') })} placeholder="contoh: admin.tvri" className="input-field pl-10" minLength={3} />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Minimal 3 karakter. Hanya huruf kecil, angka, titik, strip, dan underscore.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+                <div className="flex items-center gap-3 mt-1">
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" checked={editResetPassword.enabled} onChange={(e) => setEditResetPassword({ ...editResetPassword, enabled: e.target.checked, newPassword: '', confirmPassword: '' })} className="sr-only peer" />
+                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#005BAC]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#005BAC]"></div>
+                  </label>
+                  <span className="text-sm text-gray-600">Ubah password</span>
+                </div>
+              </div>
+            </div>
+            {editResetPassword.enabled && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9 mt-4 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Password Baru <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input type="password" value={editResetPassword.newPassword} onChange={(e) => setEditResetPassword({ ...editResetPassword, newPassword: e.target.value })} placeholder="Minimal 6 karakter" className="input-field pl-10" minLength={6} />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Konfirmasi Password <span className="text-red-500">*</span></label>
+                  <div className="relative">
+                    <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <input type="password" value={editResetPassword.confirmPassword} onChange={(e) => setEditResetPassword({ ...editResetPassword, confirmPassword: e.target.value })} placeholder="Ulangi password baru" className="input-field pl-10" minLength={6} />
+                  </div>
+                  {editResetPassword.newPassword && editResetPassword.confirmPassword && (
+                    <div className={`flex items-center gap-1.5 text-xs mt-1.5 ${editResetPassword.newPassword === editResetPassword.confirmPassword ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <FiCheck className="w-3 h-3" />
+                      <span>{editResetPassword.newPassword === editResetPassword.confirmPassword ? 'Password cocok' : 'Password tidak cocok'}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-gray-200 my-5"></div>
+
+          {/* Section: Data User */}
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
+                <MdPeople className="w-3.5 h-3.5 text-emerald-600" />
+              </div>
+              <h3 className="text-sm font-semibold text-gray-800">Data Diri</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-9">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">NIP</label>
+                <input type="text" value={editForm.nip} onChange={(e) => setEditForm({ ...editForm, nip: e.target.value })} placeholder="Masukkan NIP" className="input-field" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap <span className="text-red-500">*</span></label>
+                <input type="text" value={editForm.nama} onChange={(e) => setEditForm({ ...editForm, nama: e.target.value })} placeholder="Masukkan nama lengkap" className="input-field" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
+                <DropdownSelect
+                  value={editForm.jabatan}
+                  onChange={(e) => setEditForm({ ...editForm, jabatan: e.target.value })}
+                  options={jabatanList.map(j => ({ value: j, label: j }))}
+                  placeholder="Pilih jabatan"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
+                <DropdownSelect
+                  value={editForm.divisi}
+                  onChange={(e) => setEditForm({ ...editForm, divisi: e.target.value })}
+                  options={divisiList.map(d => ({ value: d, label: d }))}
+                  placeholder="Pilih divisi"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+                <div className="relative">
+                  <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} placeholder="email@tvri.go.id" className="input-field pl-10" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Nomor HP</label>
+                <div className="relative">
+                  <FiPhone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input type="text" value={editForm.nomor_hp} onChange={(e) => setEditForm({ ...editForm, nomor_hp: e.target.value })} placeholder="08xxxxxxxxxx" className="input-field pl-10" />
+                </div>
+              </div>
             </div>
           </div>
+
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
             <Button variant="outline" onClick={() => setShowEditModal(false)}>Batal</Button>
             <Button type="submit" loading={saving}>Simpan Perubahan</Button>
@@ -798,29 +897,7 @@ const ManajemenUser = () => {
         </form>
       </Modal>
 
-      {/* Reset Password Modal */}
-      <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} title="Reset Password" size="sm">
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600">
-            Reset password untuk user <strong>{selectedUser?.nama}</strong>
-          </p>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Password Baru</label>
-            <input
-              type="password"
-              value={resetPassword}
-              onChange={(e) => setResetPassword(e.target.value)}
-              placeholder="Minimal 6 karakter"
-              className="input-field"
-              minLength={6}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
-          <Button variant="outline" onClick={() => setShowResetModal(false)}>Batal</Button>
-          <Button onClick={handleResetPassword} loading={saving}>Reset Password</Button>
-        </div>
-      </Modal>
+
 
       {/* Delete Confirm */}
       <ConfirmDialog
@@ -896,17 +973,21 @@ const ManajemenUser = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
-                  <select value={pegawaiForm.jabatan} onChange={(e) => setPegawaiForm({ ...pegawaiForm, jabatan: e.target.value })} className="input-field">
-                    <option value="">Pilih jabatan</option>
-                    {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
-                  </select>
+                  <DropdownSelect
+                    value={pegawaiForm.jabatan}
+                    onChange={(e) => setPegawaiForm({ ...pegawaiForm, jabatan: e.target.value })}
+                    options={jabatanList.map(j => ({ value: j, label: j }))}
+                    placeholder="Pilih jabatan"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
-                  <select value={pegawaiForm.divisi} onChange={(e) => setPegawaiForm({ ...pegawaiForm, divisi: e.target.value })} className="input-field">
-                    <option value="">Pilih divisi</option>
-                    {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <DropdownSelect
+                    value={pegawaiForm.divisi}
+                    onChange={(e) => setPegawaiForm({ ...pegawaiForm, divisi: e.target.value })}
+                    options={divisiList.map(d => ({ value: d, label: d }))}
+                    placeholder="Pilih divisi"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>

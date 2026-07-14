@@ -26,6 +26,8 @@ const archiveRoutes = require('./routes/archiveRoutes');
 const userRoutes = require('./routes/userRoutes');
 const settingsRoutes = require('./routes/settingsRoutes');
 const lokasiRoutes = require('./routes/lokasiRoutes');
+const jabatanRoutes = require('./routes/jabatanRoutes');
+const divisiRoutes = require('./routes/divisiRoutes');
 
 // Middleware
 const { auth, authorize } = require('./middleware/auth');
@@ -79,6 +81,8 @@ app.use('/api/archive', archiveRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/lokasi', lokasiRoutes);
+app.use('/api/jabatan', jabatanRoutes);
+app.use('/api/divisi', divisiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

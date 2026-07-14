@@ -325,7 +325,15 @@ async function migrate() {
       console.log(`  ⚠️  Admin: ${err.message}`);
     }
 
-    // 15. Final verification
+    // 15. Remove default_password setting (no longer used)
+    try {
+      await connection.query("DELETE FROM system_settings WHERE setting_key = 'default_password'");
+      console.log('  ✅ Removed default_password setting (no longer used)');
+    } catch (err) {
+      console.log(`  ⚠️  Remove default_password: ${err.message}`);
+    }
+
+    // 16. Final verification
     console.log('');
     console.log('  📊 Verifying tables...');
     const [finalTables] = await connection.query('SHOW TABLES');

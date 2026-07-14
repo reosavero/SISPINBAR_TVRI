@@ -23,6 +23,7 @@ import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import CameraUpload from '../../components/ui/CameraUpload';
 import NumberInput from '../../components/ui/NumberInput';
 import { formatDate, formatDatePukul, getBarangFotoUrl } from '../../utils/format';
@@ -1023,21 +1024,21 @@ const Peminjaman = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Pegawai <span className="text-red-500">*</span></label>
-              <select value={adminForm.pegawai_id} onChange={(e) => setAdminForm({ ...adminForm, pegawai_id: e.target.value })} className="input-field" required>
-                <option value="">Pilih pegawai</option>
-                {pegawaiList.map(p => (
-                  <option key={p.id} value={p.id}>{p.nama} — {p.divisi || 'Tanpa divisi'}</option>
-                ))}
-              </select>
+              <DropdownSelect
+                value={adminForm.pegawai_id}
+                onChange={(e) => setAdminForm({ ...adminForm, pegawai_id: e.target.value })}
+                options={pegawaiList.map(p => ({ value: p.id, label: `${p.nama} — ${p.divisi || 'Tanpa divisi'}` }))}
+                placeholder="Pilih pegawai"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Barang <span className="text-red-500">*</span></label>
-              <select value={adminForm.barang_id} onChange={(e) => setAdminForm({ ...adminForm, barang_id: e.target.value, jumlah: 1 })} className="input-field" required>
-                <option value="">Pilih barang</option>
-                {availableBarang.map(b => (
-                  <option key={b.id} value={b.id}>{b.nama_barang} (Tersedia: {b.tersedia != null ? b.tersedia : b.jumlah})</option>
-                ))}
-              </select>
+              <DropdownSelect
+                value={adminForm.barang_id}
+                onChange={(e) => setAdminForm({ ...adminForm, barang_id: e.target.value, jumlah: 1 })}
+                options={availableBarang.map(b => ({ value: b.id, label: `${b.nama_barang} (Tersedia: ${b.tersedia != null ? b.tersedia : b.jumlah})` }))}
+                placeholder="Pilih barang"
+              />
             </div>
             <div>
               <NumberInput

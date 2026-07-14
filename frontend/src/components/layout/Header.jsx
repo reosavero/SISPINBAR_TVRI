@@ -104,6 +104,7 @@ const Header = ({ onMenuToggle }) => {
     expandedGroups,
     markAsRead,
     markAllAsRead,
+    markMultipleAsRead,
     markGroupAsRead,
     toggleGroup,
     refresh,
@@ -119,7 +120,7 @@ const Header = ({ onMenuToggle }) => {
   const location = useLocation();
 
   // Admin & Super Admin: show notif bell on all pages
-  const showAdminNotif = !!isAdmin && location.pathname === '/dashboard';
+  const showAdminNotif = !!isAdmin;
 
   // Handle admin bell click
   const handleBellClick = () => {

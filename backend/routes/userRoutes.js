@@ -15,6 +15,7 @@ router.use(auth);
 // ===== Admin+ (approve/reject registrations) =====
 // Must be before /:id to avoid route conflict
 router.get('/pending', adminAndAbove, userController.getPending);
+router.get('/by-jabatan-divisi', adminAndAbove, userController.getByJabatanOrDivisi);
 router.put('/:id/approve', adminAndAbove, userController.approve);
 router.put('/:id/reject', adminAndAbove, userController.reject);
 

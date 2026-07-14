@@ -99,6 +99,34 @@ CREATE TABLE IF NOT EXISTS lokasi (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
+-- TABEL JABATAN
+-- ============================================
+CREATE TABLE IF NOT EXISTS jabatan (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(100) NOT NULL,
+  deskripsi TEXT DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE INDEX uk_jabatan_nama (nama),
+  INDEX idx_jabatan_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- TABEL DIVISI
+-- ============================================
+CREATE TABLE IF NOT EXISTS divisi (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(100) NOT NULL,
+  deskripsi TEXT DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE INDEX uk_divisi_nama (nama),
+  INDEX idx_divisi_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
 -- TABEL BARANG (v16: unique index on nama_barang)
 -- ============================================
 CREATE TABLE IF NOT EXISTS barang (
@@ -113,6 +141,7 @@ CREATE TABLE IF NOT EXISTS barang (
   deskripsi TEXT,
   jumlah INT NOT NULL DEFAULT 1,
   foto VARCHAR(255) DEFAULT NULL,
+  deleted_at TIMESTAMP NULL DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (kategori_id) REFERENCES kategori(id) ON DELETE SET NULL,
@@ -121,7 +150,8 @@ CREATE TABLE IF NOT EXISTS barang (
   INDEX idx_kode (kode_barang),
   INDEX idx_status (status),
   INDEX idx_kategori (kategori_id),
-  INDEX idx_barang_lokasi_id (lokasi_id)
+  INDEX idx_barang_lokasi_id (lokasi_id),
+  INDEX idx_barang_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -137,6 +167,7 @@ CREATE TABLE IF NOT EXISTS peminjaman (
   tanggal_kembali_rencana DATETIME NOT NULL,
   keperluan TEXT,
   foto VARCHAR(255) DEFAULT NULL,
+  archived_at TIMESTAMP NULL DEFAULT NULL COMMENT 'Soft archive timestamp',
   status ENUM('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi', 'Dikembalikan', 'Ditolak') DEFAULT 'Menunggu Persetujuan',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -145,7 +176,8 @@ CREATE TABLE IF NOT EXISTS peminjaman (
   INDEX idx_nomor (nomor_peminjaman),
   INDEX idx_pegawai (pegawai_id),
   INDEX idx_status (status),
-  INDEX idx_tanggal (tanggal_pinjam)
+  INDEX idx_tanggal (tanggal_pinjam),
+  INDEX idx_peminjaman_archived_at (archived_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -191,6 +223,7 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE TABLE IF NOT EXISTS notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT DEFAULT NULL,
+  pegawai_id INT DEFAULT NULL,
   title VARCHAR(255) DEFAULT NULL,
   message TEXT,
   type VARCHAR(50) DEFAULT 'info',
@@ -199,8 +232,11 @@ CREATE TABLE IF NOT EXISTS notifications (
   is_read TINYINT(1) DEFAULT 0,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  FOREIGN KEY (pegawai_id) REFERENCES users(id) ON DELETE SET NULL,
   INDEX idx_user_read (user_id, is_read),
-  INDEX idx_user_created (user_id, created_at)
+  INDEX idx_pegawai_read (pegawai_id, is_read),
+  INDEX idx_user_created (user_id, created_at),
+  INDEX idx_pegawai_id (pegawai_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================
@@ -229,7 +265,6 @@ INSERT INTO system_settings (setting_key, setting_value, description) VALUES
   ('app_organization', 'TVRI Jawa Timur', 'Nama Organisasi'),
   ('max_login_attempts', '5', 'Maksimal percobaan login'),
   ('session_timeout', '24', 'Session timeout (jam)'),
-  ('default_password', 'tvri1234', 'Default password untuk akun baru'),
   ('audit_log_retention_days', '30', 'Jumlah hari retensi log aktivitas. Log yang lebih lama akan dihapus otomatis.')
 ON DUPLICATE KEY UPDATE description=VALUES(description);
 

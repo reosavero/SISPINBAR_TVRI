@@ -21,6 +21,7 @@ import Input from '../../components/ui/Input';
 import { KATEGORI_DEFAULT, STATUS_BARANG, KONDISI_BARANG } from '../../utils/constants';
 import lokasiService from '../../services/lokasiService';
 import Modal from '../../components/ui/Modal';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import Badge from '../../components/ui/Badge';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import EmptyState from '../../components/ui/EmptyState';
@@ -569,27 +570,32 @@ const Kategori = () => {
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Lokasi</label>
-                <select value={barangForm.lokasi} onChange={(e) => {
-                  const selectedLokasi = kategoriLokasiList.find(l => l.nama_lokasi === e.target.value);
-                  setBarangForm({ ...barangForm, lokasi: e.target.value, lokasi_id: selectedLokasi ? selectedLokasi.id : null });
-                }} className="input-field" required>
-                  {kategoriLokasiList.length > 0 ? (
-                    kategoriLokasiList.map(l => (
-                      <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}{l.gedung ? ` — ${l.gedung}` : ''}{l.lantai ? ` Lt. ${l.lantai}` : ''}</option>
-                    ))
-                  ) : (
-                    <option value="">Memuat lokasi...</option>
-                  )}
-                </select>
+                <DropdownSelect
+                  value={barangForm.lokasi}
+                  onChange={(e) => {
+                    const selectedLokasi = kategoriLokasiList.find(l => l.nama_lokasi === e.target.value);
+                    setBarangForm({ ...barangForm, lokasi: e.target.value, lokasi_id: selectedLokasi ? selectedLokasi.id : null });
+                  }}
+                  options={kategoriLokasiList.length > 0
+                    ? kategoriLokasiList.map(l => ({ value: l.nama_lokasi, label: `${l.nama_lokasi}${l.gedung ? ` — ${l.gedung}` : ''}${l.lantai ? ` Lt. ${l.lantai}` : ''}` }))
+                    : [{ value: '', label: 'Memuat lokasi...' }]
+                  }
+                  placeholder="Pilih lokasi"
+                />
               </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Kondisi</label>
-                <select value={barangForm.kondisi} onChange={(e) => setBarangForm({ ...barangForm, kondisi: e.target.value })} className="input-field">
-                  <option value="Baik">Baik</option>
-                  <option value="Rusak Ringan">Rusak Ringan</option>
-                  <option value="Rusak Berat">Rusak Berat</option>
-                </select>
+                <DropdownSelect
+                  value={barangForm.kondisi}
+                  onChange={(e) => setBarangForm({ ...barangForm, kondisi: e.target.value })}
+                  options={[
+                    { value: 'Baik', label: 'Baik' },
+                    { value: 'Rusak Ringan', label: 'Rusak Ringan' },
+                    { value: 'Rusak Berat', label: 'Rusak Berat' },
+                  ]}
+                  placeholder="Pilih kondisi"
+                />
               </div>
 
               <div className="mb-4">

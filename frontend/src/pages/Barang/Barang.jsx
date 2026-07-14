@@ -12,6 +12,7 @@ import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import ImageCropModal from '../../components/ui/ImageCropModal';
 import { generateKodeBarang, getBarangFotoUrl } from '../../utils/format';
 import { KATEGORI_DEFAULT, STATUS_BARANG, KONDISI_BARANG } from '../../utils/constants';
@@ -316,27 +317,25 @@ const Barang = () => {
               />
             </div>
             <div className="flex gap-2">
-              <select
+              <DropdownSelect
                 value={filterKategori}
                 onChange={(e) => { setFilterKategori(e.target.value); setCurrentPage(1); }}
-                className="input-field w-full sm:w-auto"
-              >
-                <option value="">Semua Kategori</option>
-                {categories.map(c => (
-                  <option key={c.id || c.nama} value={c.id || c.nama}>{c.nama}</option>
-                ))}
-              </select>
-              <select
+                options={categories.map(c => ({ value: c.id || c.nama, label: c.nama }))}
+                placeholder="Semua Kategori"
+                className="w-full sm:w-auto"
+              />
+              <DropdownSelect
                 value={filterStatus}
                 onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                className="input-field w-full sm:w-auto"
-              >
-                <option value="">Semua Status</option>
-                <option value="Tersedia">Tersedia</option>
-                <option value="Dipinjam">Dipinjam</option>
-                <option value="Rusak">Rusak</option>
-                <option value="Dalam Perbaikan">Dalam Perbaikan</option>
-              </select>
+                options={[
+                  { value: 'Tersedia', label: 'Tersedia' },
+                  { value: 'Dipinjam', label: 'Dipinjam' },
+                  { value: 'Rusak', label: 'Rusak' },
+                  { value: 'Dalam Perbaikan', label: 'Dalam Perbaikan' },
+                ]}
+                placeholder="Semua Status"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
           <Button icon={FiPlus} onClick={handleOpenAdd} className="w-full sm:w-auto">
@@ -529,43 +528,45 @@ const Barang = () => {
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Kategori</label>
-              <select name="kategori_id" value={form.kategori_id} onChange={handleChange} className="input-field" required>
-                <option value="">Pilih kategori</option>
-                {categories.map(c => (
-                  <option key={c.id || c.nama} value={c.id || c.nama}>{c.nama}</option>
-                ))}
-              </select>
+              <DropdownSelect
+                value={form.kategori_id}
+                onChange={(e) => setForm({ ...form, kategori_id: e.target.value })}
+                options={categories.map(c => ({ value: c.id || c.nama, label: c.nama }))}
+                placeholder="Pilih kategori"
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Lokasi Barang</label>
-              <select name="lokasi" value={form.lokasi} onChange={(e) => {
-                const selectedLokasi = lokasiList.find(l => l.nama_lokasi === e.target.value);
-                setForm({ ...form, lokasi: e.target.value, lokasi_id: selectedLokasi ? String(selectedLokasi.id) : '' });
-              }} className="input-field" required>
-                {lokasiList.length > 0 ? (
-                  lokasiList.map(l => (
-                    <option key={l.id} value={l.nama_lokasi}>{l.nama_lokasi}{l.gedung ? ` — ${l.gedung}` : ''}{l.lantai ? ` Lt. ${l.lantai}` : ''}</option>
-                  ))
-                ) : (
-                  <option value="">Memuat lokasi...</option>
-                )}
-              </select>
+              <DropdownSelect
+                value={form.lokasi}
+                onChange={(e) => {
+                  const selectedLokasi = lokasiList.find(l => l.nama_lokasi === e.target.value);
+                  setForm({ ...form, lokasi: e.target.value, lokasi_id: selectedLokasi ? String(selectedLokasi.id) : '' });
+                }}
+                options={lokasiList.length > 0
+                  ? lokasiList.map(l => ({ value: l.nama_lokasi, label: `${l.nama_lokasi}${l.gedung ? ` — ${l.gedung}` : ''}${l.lantai ? ` Lt. ${l.lantai}` : ''}` }))
+                  : [{ value: '', label: 'Memuat lokasi...' }]
+                }
+                placeholder="Pilih lokasi"
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Kondisi</label>
-              <select name="kondisi" value={form.kondisi} onChange={handleChange} className="input-field">
-                {Object.values(KONDISI_BARANG).map(k => (
-                  <option key={k} value={k}>{k}</option>
-                ))}
-              </select>
+              <DropdownSelect
+                value={form.kondisi}
+                onChange={(e) => setForm({ ...form, kondisi: e.target.value })}
+                options={Object.values(KONDISI_BARANG).map(k => ({ value: k, label: k }))}
+                placeholder="Pilih kondisi"
+              />
             </div>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-              <select name="status" value={form.status} onChange={handleChange} className="input-field">
-                {Object.values(STATUS_BARANG).map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <DropdownSelect
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                options={Object.values(STATUS_BARANG).map(s => ({ value: s, label: s }))}
+                placeholder="Pilih status"
+              />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi</label>

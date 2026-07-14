@@ -179,6 +179,34 @@
     box-shadow: 0 0 0 3px rgba(0, 91, 172, 0.1);
   }
 
+  /* Select/Dropdown styling */
+  select.input-field {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+    padding-right: 36px;
+    cursor: pointer;
+    border-radius: 12px;
+  }
+
+  select.input-field:focus {
+    border-color: #005BAC;
+    box-shadow: 0 0 0 3px rgba(0, 91, 172, 0.1);
+  }
+
+  select.input-field:hover {
+    border-color: #9CA3AF;
+  }
+
+  select.input-field option {
+    padding: 10px 14px;
+    background: white;
+  }
+
   /* Mobile input field - prevent zoom on focus */
   @media (max-width: 767px) {
     .input-field {
@@ -370,5 +398,21 @@
   /* Touch manipulation for better mobile experience */
   .touch-manipulation {
     touch-action: manipulation;
+  }
+
+  /* Custom dropdown animation */
+  @keyframes dropdown-open {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .animate-dropdown-open {
+    animation: dropdown-open 0.15s ease-out;
   }
 }

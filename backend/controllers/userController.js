@@ -28,6 +28,18 @@ const userController = {
     }
   },
 
+  // ========== GET PEGAWAI BY JABATAN/DIVISI (Admin & Super Admin) ==========
+  getByJabatanOrDivisi: async (req, res) => {
+    try {
+      const { type, value, page, limit } = req.query;
+      const result = await userService.getByJabatanOrDivisi({ type, value, page, limit });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      console.error('GetByJabatanOrDivisi error:', error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
   // ========== GET USER BY ID ==========
   getById: async (req, res) => {
     try {

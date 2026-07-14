@@ -10,16 +10,20 @@ import { MdPeople } from 'react-icons/md';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
-import { DIVISI, JABATAN } from '../../utils/constants';
+import DropdownSelect from '../../components/ui/DropdownSelect';
+import { useMasterData } from '../../context/MasterDataContext';
 import { getInitials, getAvatarUrl } from '../../utils/format';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
 const Pegawai = () => {
   const { user: currentUser } = useAuth();
+  const { jabatanList, divisiList } = useMasterData();
   const [pegawai, setPegawai] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [filterJabatan, setFilterJabatan] = useState('');
+  const [filterDivisi, setFilterDivisi] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -57,7 +61,7 @@ const Pegawai = () => {
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingUser, setRejectingUser] = useState(null);
 
-  useEffect(() => { fetchPegawai(); }, [currentPage, search]);
+  useEffect(() => { fetchPegawai(); }, [currentPage, search, filterJabatan, filterDivisi]);
 
   // Fetch pending registrations (admin+)
   useEffect(() => {
@@ -124,6 +128,8 @@ const Pegawai = () => {
     try {
       const params = { page: currentPage };
       if (search) params.search = search;
+      if (filterJabatan) params.jabatan = filterJabatan;
+      if (filterDivisi) params.divisi = filterDivisi;
       const res = await api.get('/pegawai', { params });
       setPegawai(res.data.data || []);
       setTotalPages(res.data.pagination?.totalPages || 1);
@@ -312,10 +318,6 @@ const Pegawai = () => {
           <h1 className="page-title">Data Pegawai</h1>
           <p className="page-subtitle">Kelola data pegawai dan akun login TVRI Jawa Timur</p>
         </div>
-        <div className="relative w-full sm:w-72">
-          <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Cari pegawai..." className="input-field pl-10" />
-        </div>
       </div>
 
       {/* Pending Registration Approval (admin only) */}
@@ -372,20 +374,31 @@ const Pegawai = () => {
         </div>
       )}
 
-      {/* Info Banner + Tambah Pegawai */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4 flex-1">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <FiUser className="w-4 h-4 text-blue-600" />
+      {/* Filter & Tambah Pegawai */}
+      <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input type="text" value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} placeholder="Cari pegawai..." className="input-field pl-10" />
             </div>
-            <div>
-              <p className="text-sm font-medium text-blue-800">Pendaftaran Pegawai Baru</p>
-              <p className="text-xs text-blue-600 mt-0.5">Setiap pegawai yang ditambahkan akan otomatis mendapatkan akun login. Pegawai dapat login menggunakan username dan password yang didaftarkan admin.</p>
-            </div>
+            <DropdownSelect
+              value={filterJabatan}
+              onChange={(e) => { setFilterJabatan(e.target.value); setCurrentPage(1); }}
+              options={jabatanList.map(j => ({ value: j, label: j }))}
+              placeholder="Semua Jabatan"
+              className="w-full sm:w-auto min-w-[160px]"
+            />
+            <DropdownSelect
+              value={filterDivisi}
+              onChange={(e) => { setFilterDivisi(e.target.value); setCurrentPage(1); }}
+              options={divisiList.map(d => ({ value: d, label: d }))}
+              placeholder="Semua Divisi"
+              className="w-full sm:w-auto min-w-[160px]"
+            />
           </div>
+          <Button icon={FiPlus} onClick={handleOpenAdd}>Tambah Pegawai</Button>
         </div>
-        <Button icon={FiPlus} onClick={handleOpenAdd}>Tambah Pegawai</Button>
       </div>
 
       <div className="table-container">
@@ -602,17 +615,21 @@ const Pegawai = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
-                  <select value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} className="input-field">
-                    <option value="">Pilih jabatan</option>
-                    {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
-                  </select>
+                  <DropdownSelect
+                    value={form.jabatan}
+                    onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
+                    options={jabatanList.map(j => ({ value: j, label: j }))}
+                    placeholder="Pilih jabatan"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
-                  <select value={form.divisi} onChange={(e) => setForm({ ...form, divisi: e.target.value })} className="input-field">
-                    <option value="">Pilih divisi</option>
-                    {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
+                  <DropdownSelect
+                    value={form.divisi}
+                    onChange={(e) => setForm({ ...form, divisi: e.target.value })}
+                    options={divisiList.map(d => ({ value: d, label: d }))}
+                    placeholder="Pilih divisi"
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
@@ -675,17 +692,21 @@ const Pegawai = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
-                    <select value={form.jabatan} onChange={(e) => setForm({ ...form, jabatan: e.target.value })} className="input-field">
-                      <option value="">Pilih jabatan</option>
-                      {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
-                    </select>
+                    <DropdownSelect
+                      value={form.jabatan}
+                      onChange={(e) => setForm({ ...form, jabatan: e.target.value })}
+                      options={jabatanList.map(j => ({ value: j, label: j }))}
+                      placeholder="Pilih jabatan"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
-                    <select value={form.divisi} onChange={(e) => setForm({ ...form, divisi: e.target.value })} className="input-field">
-                      <option value="">Pilih divisi</option>
-                      {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
-                    </select>
+                    <DropdownSelect
+                      value={form.divisi}
+                      onChange={(e) => setForm({ ...form, divisi: e.target.value })}
+                      options={divisiList.map(d => ({ value: d, label: d }))}
+                      placeholder="Pilih divisi"
+                    />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Email <span className="text-red-500">*</span></label>

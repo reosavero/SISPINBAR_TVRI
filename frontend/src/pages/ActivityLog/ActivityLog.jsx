@@ -5,11 +5,10 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FiSearch, FiFilter, FiActivity, FiClock, FiUser, FiChevronLeft, FiChevronRight, FiTrash2, FiInfo } from 'react-icons/fi';
+import { FiSearch, FiActivity, FiClock, FiUser, FiChevronLeft, FiChevronRight, FiInfo } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 import { formatDateTime } from '../../utils/format';
-import Button from '../../components/ui/Button';
-import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 
@@ -23,12 +22,8 @@ const ActivityLog = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-  const itemsPerPage = 20;
-
-  // Cleanup state
   const [retentionInfo, setRetentionInfo] = useState(null);
-  const [showCleanupDialog, setShowCleanupDialog] = useState(false);
-  const [cleanupLoading, setCleanupLoading] = useState(false);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     fetchLogs();
@@ -63,27 +58,6 @@ const ActivityLog = () => {
     } catch (err) {
       // silently fail
     }
-  };
-
-  const handleCleanup = async () => {
-    setCleanupLoading(true);
-    try {
-      const res = await api.post('/audit/cleanup');
-      if (res.data.success) {
-        const { deleted, retentionDays } = res.data.data;
-        if (deleted > 0) {
-          toast.success(`${deleted} log lama berhasil dibersihkan (lebih dari ${retentionDays} hari)`);
-        } else {
-          toast.success('Tidak ada log yang perlu dibersihkan');
-        }
-        fetchLogs();
-        fetchRetentionInfo();
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Gagal membersihkan log');
-    }
-    setCleanupLoading(false);
-    setShowCleanupDialog(false);
   };
 
   const actionLabels = {
@@ -161,15 +135,6 @@ const ActivityLog = () => {
           <h1 className="page-title">Activity Log</h1>
           <p className="page-subtitle">Riwayat aktivitas pengguna dalam sistem</p>
         </div>
-        {isSuperAdmin && retentionInfo && (
-          <Button
-            icon={FiTrash2}
-            onClick={() => setShowCleanupDialog(true)}
-            className="bg-red-600 hover:bg-red-700 text-white border-red-600 hover:border-red-700"
-          >
-            Bersihkan Log Lama
-          </Button>
-        )}
       </div>
 
       {/* Retention Info Banner */}
@@ -183,13 +148,11 @@ const ActivityLog = () => {
             <div className="flex items-center gap-2">
               <FiInfo className="w-4 h-4 text-blue-600 flex-shrink-0" />
               <span className="text-sm text-blue-800 font-medium">
-                Retensi: <strong>{retentionInfo.retentionDays} hari</strong>
+                Retensi: <strong>{retentionInfo.retentionDays} hari</strong> — Log yang lebih tua akan otomatis dihapus setiap malam.
               </span>
             </div>
             <div className="flex flex-wrap gap-3 text-xs text-blue-700">
               <span>Total log: <strong>{retentionInfo.totalLogs}</strong></span>
-              <span>•</span>
-              <span>Log lama (&gt;{retentionInfo.retentionDays} hari): <strong className={retentionInfo.logsToClean > 0 ? 'text-red-600' : 'text-emerald-600'}>{retentionInfo.logsToClean}</strong></span>
               {retentionInfo.oldestLog && (
                 <>
                   <span>•</span>
@@ -215,26 +178,20 @@ const ActivityLog = () => {
             />
           </div>
           <div className="flex gap-2">
-            <select
+            <DropdownSelect
               value={filterAction}
               onChange={(e) => { setFilterAction(e.target.value); setCurrentPage(1); }}
-              className="input-field w-full sm:w-auto"
-            >
-              <option value="">Semua Aksi</option>
-              {Object.entries(actionLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-            <select
+              options={Object.entries(actionLabels).map(([key, label]) => ({ value: key, label }))}
+              placeholder="Semua Aksi"
+              className="w-full sm:w-auto"
+            />
+            <DropdownSelect
               value={filterModule}
               onChange={(e) => { setFilterModule(e.target.value); setCurrentPage(1); }}
-              className="input-field w-full sm:w-auto"
-            >
-              <option value="">Semua Modul</option>
-              {Object.entries(moduleLabels).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
+              options={Object.entries(moduleLabels).map(([key, label]) => ({ value: key, label }))}
+              placeholder="Semua Modul"
+              className="w-full sm:w-auto"
+            />
           </div>
         </div>
       </div>
@@ -323,25 +280,6 @@ const ActivityLog = () => {
           </div>
         )}
       </div>
-
-      {/* Cleanup Confirm Dialog */}
-      {showCleanupDialog && retentionInfo && (
-        <ConfirmDialog
-          isOpen={showCleanupDialog}
-          onClose={() => setShowCleanupDialog(false)}
-          onConfirm={handleCleanup}
-          loading={cleanupLoading}
-          title="Bersihkan Log Lama"
-          message={
-            retentionInfo.logsToClean > 0
-              ? `Apakah Anda yakin ingin menghapus ${retentionInfo.logsToClean} log yang lebih dari ${retentionInfo.retentionDays} hari? Tindakan ini tidak dapat dibatalkan.`
-              : `Tidak ada log yang lebih dari ${retentionInfo.retentionDays} hari. Semua log masih dalam periode retensi.`
-          }
-          confirmText={retentionInfo.logsToClean > 0 ? 'Ya, Bersihkan' : 'OK'}
-          confirmClass={retentionInfo.logsToClean > 0 ? 'bg-red-600 hover:bg-red-700 text-white border-red-600' : ''}
-          icon={FiTrash2}
-        />
-      )}
     </div>
   );
 };

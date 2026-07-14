@@ -19,6 +19,7 @@ import Riwayat from '../pages/Riwayat/Riwayat';
 import Profil from '../pages/Profil/Profil';
 import Barang from '../pages/Barang/Barang';
 import Lokasi from '../pages/Lokasi/Lokasi';
+import KategoriUser from '../pages/KategoriUser/KategoriUser';
 
 // Lazy-loaded pages (Super Admin only)
 import { lazy, Suspense } from 'react';
@@ -77,6 +78,9 @@ const AppRoutes = () => {
 
         {/* Kelola Lokasi — admin & super_admin */}
         <Route path="lokasi" element={<ProtectedRoute requireAdmin><Lokasi /></ProtectedRoute>} />
+
+        {/* Kategori User — admin & super_admin */}
+        <Route path="kategori-user" element={<ProtectedRoute requireAdmin><KategoriUser /></ProtectedRoute>} />
 
         {/* Pegawai — admin & super_admin */}
         <Route path="pegawai" element={<ProtectedRoute requireAdmin><Pegawai /></ProtectedRoute>} />

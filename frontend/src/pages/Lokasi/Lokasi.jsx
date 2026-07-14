@@ -17,6 +17,7 @@ import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import Pagination from '../../components/ui/Pagination';
 import ConfirmDialog from '../../components/ui/ConfirmDialog';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 import EmptyState from '../../components/ui/EmptyState';
 import { STATUS_LOKASI } from '../../utils/constants';
 import lokasiService from '../../services/lokasiService';
@@ -201,25 +202,23 @@ const Lokasi = () => {
               />
             </div>
             <div className="flex gap-2">
-              <select
+              <DropdownSelect
                 value={filterGedung}
                 onChange={(e) => { setFilterGedung(e.target.value); setCurrentPage(1); }}
-                className="input-field w-full sm:w-auto"
-              >
-                <option value="">Semua Gedung</option>
-                {gedungOptions.map(g => (
-                  <option key={g} value={g}>{g}</option>
-                ))}
-              </select>
-              <select
+                options={gedungOptions.map(g => ({ value: g, label: g }))}
+                placeholder="Semua Gedung"
+                className="w-full sm:w-auto"
+              />
+              <DropdownSelect
                 value={filterStatus}
                 onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-                className="input-field w-full sm:w-auto"
-              >
-                <option value="">Semua Status</option>
-                <option value="Aktif">Aktif</option>
-                <option value="Tidak Aktif">Tidak Aktif</option>
-              </select>
+                options={[
+                  { value: 'Aktif', label: 'Aktif' },
+                  { value: 'Tidak Aktif', label: 'Tidak Aktif' },
+                ]}
+                placeholder="Semua Status"
+                className="w-full sm:w-auto"
+              />
             </div>
           </div>
           <Button icon={FiPlus} onClick={handleOpenAdd} className="w-full sm:w-auto">
@@ -407,10 +406,15 @@ const Lokasi = () => {
             <Input label="Ruangan" name="ruangan" value={form.ruangan} onChange={handleChange} placeholder="Contoh: Studio A" />
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Status</label>
-              <select name="status" value={form.status} onChange={handleChange} className="input-field">
-                <option value="Aktif">Aktif</option>
-                <option value="Tidak Aktif">Tidak Aktif</option>
-              </select>
+              <DropdownSelect
+                value={form.status}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
+                options={[
+                  { value: 'Aktif', label: 'Aktif' },
+                  { value: 'Tidak Aktif', label: 'Tidak Aktif' },
+                ]}
+                placeholder="Pilih status"
+              />
             </div>
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Deskripsi</label>

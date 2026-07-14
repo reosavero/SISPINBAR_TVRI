@@ -225,19 +225,6 @@ const Settings = () => {
             <p className="text-xs text-gray-400 mt-1">Jika melebihi batas, akun akan terkunci selama 30 menit.</p>
           </div>
 
-          {/* Default Password */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Default Password Akun Baru</label>
-            <input
-              type="text"
-              value={settings.default_password || ''}
-              onChange={(e) => handleChange('default_password', e.target.value)}
-              className="input-field"
-              placeholder="Password default untuk akun baru"
-            />
-            <p className="text-xs text-gray-400 mt-1">Password ini akan digunakan saat membuat akun baru pegawai</p>
-          </div>
-
           {/* Audit Log Retention */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">

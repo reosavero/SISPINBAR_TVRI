@@ -13,6 +13,7 @@ const pegawaiService = {
   getAll: async (params = {}) => {
     const search = params.search || null;
     const divisi = params.divisi || null;
+    const jabatan = params.jabatan || null;
 
     let sql = pegawaiQueries.getAll;
     let queryParams = [];
@@ -25,6 +26,10 @@ const pegawaiService = {
     if (divisi) {
       conditions.push('divisi = ?');
       queryParams.push(divisi);
+    }
+    if (jabatan) {
+      conditions.push('jabatan = ?');
+      queryParams.push(jabatan);
     }
 
     if (conditions.length > 0) {

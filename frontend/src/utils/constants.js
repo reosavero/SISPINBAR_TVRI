@@ -134,14 +134,14 @@ export const SIDEBAR_MENU_SUPER_ADMIN = [
     icon: 'MdInventory2',
   },
   {
-    label: 'Kategori',
+    label: 'Kategori Barang',
     path: '/kategori',
     icon: 'MdCategory',
   },
   {
-    label: 'Kelola Lokasi',
-    path: '/lokasi',
-    icon: 'MdLocationOn',
+    label: 'Kategori User',
+    path: '/kategori-user',
+    icon: 'MdPeople',
   },
   {
     label: 'Peminjaman',
@@ -177,14 +177,14 @@ export const SIDEBAR_MENU_ADMIN = [
     icon: 'MdDashboard',
   },
   {
-    label: 'Kategori',
+    label: 'Kategori Barang',
     path: '/kategori',
     icon: 'MdCategory',
   },
   {
-    label: 'Kelola Lokasi',
-    path: '/lokasi',
-    icon: 'MdLocationOn',
+    label: 'Kategori User',
+    path: '/kategori-user',
+    icon: 'MdPeople',
   },
   {
     label: 'Pegawai',

@@ -8,10 +8,12 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiUser, FiLock, FiEye, FiEyeOff, FiArrowLeft, FiPhone, FiMessageCircle, FiCheckCircle, FiMail, FiSend, FiRefreshCw, FiShield } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
-import { APP_NAME, APP_FULL_NAME, APP_ORGANIZATION, DIVISI, JABATAN } from '../../utils/constants';
+import { APP_NAME, APP_FULL_NAME, APP_ORGANIZATION } from '../../utils/constants';
+import { useMasterData } from '../../context/MasterDataContext';
 import logoTvri from '../../assets/logo-tvri.svg';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
+import DropdownSelect from '../../components/ui/DropdownSelect';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,6 +22,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const { jabatanList, divisiList } = useMasterData();
 
   // Register state
   const [regForm, setRegForm] = useState({
@@ -365,9 +369,8 @@ const Login = () => {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: -30 }}
       transition={{ duration: 0.3 }}
-      className="glass-card-strong p-5 sm:p-8 shadow-2xl"
-    >
-      <div className="text-center mb-5">
+      className="glass-card-strong p-5 sm:p-8 shadow-2xl">
+            <div className="text-center mb-5">
         <h2 className="text-xl font-bold text-gray-800">Buat Akun Pegawai</h2>
         <p className="text-sm text-gray-500 mt-1">{regStep === 1 ? 'Lengkapi data pegawai Anda' : regStep === 2 ? 'Verifikasi email Anda' : 'Buat username dan password'}</p>
       </div>
@@ -420,25 +423,21 @@ const Login = () => {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Jabatan</label>
-                <select
+                <DropdownSelect
                   value={regForm.jabatan}
                   onChange={(e) => setRegForm({ ...regForm, jabatan: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="">Pilih jabatan</option>
-                  {JABATAN.map(j => <option key={j} value={j}>{j}</option>)}
-                </select>
+                  options={jabatanList.map(j => ({ value: j, label: j }))}
+                  placeholder="Pilih jabatan"
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Divisi</label>
-                <select
+                <DropdownSelect
                   value={regForm.divisi}
                   onChange={(e) => setRegForm({ ...regForm, divisi: e.target.value })}
-                  className="input-field"
-                >
-                  <option value="">Pilih divisi</option>
-                  {DIVISI.map(d => <option key={d} value={d}>{d}</option>)}
-                </select>
+                  options={divisiList.map(d => ({ value: d, label: d }))}
+                  placeholder="Pilih divisi"
+                />
               </div>
             </div>
 
@@ -488,7 +487,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={emailVerifying || emailVerified === false}
-            className={`w-full py-3 rounded-xl font-semibold text-white transition-all shadow-lg mt-2 ${
+            className={`w-full py-3 rounded-xl font-semibold text-white transition-all shadow-lg mt-6 ${
               emailVerifying || emailVerified === false
                 ? 'bg-gray-400 cursor-not-allowed shadow-none'
                 : 'bg-gradient-to-r from-[#005BAC] to-[#003B71] hover:from-[#006CC4] hover:to-[#004A8F] hover:shadow-xl'
@@ -502,6 +501,15 @@ const Login = () => {
             ) : (
               'Selanjutnya'
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => { setView('login'); resetOtpState(); setEmailVerified(null); setEmailVerifying(false); }}
+            className="w-full py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all mt-2 flex items-center justify-center gap-2"
+          >
+            <FiArrowLeft className="w-4 h-4" />
+            Kembali ke Halaman Login
           </button>
         </form>
       ) : regStep === 2 ? (
@@ -723,7 +731,6 @@ const Login = () => {
           </div>
         </form>
       )}
-
     </motion.div>
   );
 
@@ -828,6 +835,14 @@ const Login = () => {
         </p>
       </motion.div>
 
+      <button
+        type="button"
+        onClick={() => setView('login')}
+        className="w-full py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all flex items-center justify-center gap-2"
+      >
+        <FiArrowLeft className="w-4 h-4" />
+        Kembali ke Halaman Login
+      </button>
     </motion.div>
   );
 

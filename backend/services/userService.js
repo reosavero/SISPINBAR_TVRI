@@ -74,7 +74,7 @@ const userService = {
     const whereClause = 'WHERE ' + whereConditions.join(' AND ');
 
     const [rows] = await pool.execute(
-      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.created_at
+      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at
        FROM users u
        ${whereClause}
        ORDER BY u.nama ASC
@@ -85,6 +85,40 @@ const userService = {
     const [countResult] = await pool.execute(
       `SELECT COUNT(*) AS total FROM users u ${whereClause}`,
       queryParams
+    );
+
+    const totalItems = countResult[0].total;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      data: rows,
+      pagination: { page, totalPages, totalItems, itemsPerPage: limit },
+    };
+  },
+
+  // ========== GET PEGAWAI BY JABATAN OR DIVISI ==========
+  getByJabatanOrDivisi: async (params = {}) => {
+    const { type, value } = params;
+    if (!type || !value) return { data: [], pagination: { page: 1, totalPages: 0, totalItems: 0, itemsPerPage: 20 } };
+
+    const page = parseInt(params.page) || 1;
+    const limit = parseInt(params.limit) || 50;
+    const offset = (page - 1) * limit;
+
+    const column = type === 'jabatan' ? 'u.jabatan' : 'u.divisi';
+
+    const [rows] = await pool.execute(
+      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.registration_status, u.created_at
+       FROM users u
+       WHERE ${column} = ? AND u.role = 'pegawai' AND u.deleted_at IS NULL AND u.registration_status = 'approved'
+       ORDER BY u.nama ASC
+       LIMIT ? OFFSET ?`,
+      [value, limit, offset]
+    );
+
+    const [countResult] = await pool.execute(
+      `SELECT COUNT(*) AS total FROM users u WHERE ${column} = ? AND u.role = 'pegawai' AND u.deleted_at IS NULL AND u.registration_status = 'approved'`,
+      [value]
     );
 
     const totalItems = countResult[0].total;
@@ -177,12 +211,31 @@ const userService = {
       throw new Error('Tidak dapat membuat akun dengan role Super Admin');
     }
 
-    const { nama, email, is_active, role } = data;
+    // Check username uniqueness if changing
+    if (data.username && data.username !== targetUser[0].username) {
+      if (data.username.length < 3) {
+        throw new Error('Username minimal 3 karakter');
+      }
+      const [existingUsername] = await pool.execute(
+        'SELECT id FROM users WHERE username = ? AND id != ? AND deleted_at IS NULL',
+        [data.username, id]
+      );
+      if (existingUsername.length > 0) {
+        throw new Error('Username sudah digunakan. Silakan pilih username lain.');
+      }
+    }
+
+    const { nama, email, nip, jabatan, divisi, nomor_hp, is_active, role } = data;
     const updates = [];
     const values = [];
 
+    if (data.username !== undefined && data.username !== targetUser[0].username) { updates.push('username = ?'); values.push(data.username); }
     if (nama !== undefined) { updates.push('nama = ?'); values.push(nama); }
     if (email !== undefined) { updates.push('email = ?'); values.push(email || null); }
+    if (nip !== undefined) { updates.push('nip = ?'); values.push(nip || null); }
+    if (jabatan !== undefined) { updates.push('jabatan = ?'); values.push(jabatan || null); }
+    if (divisi !== undefined) { updates.push('divisi = ?'); values.push(divisi || null); }
+    if (nomor_hp !== undefined) { updates.push('nomor_hp = ?'); values.push(nomor_hp || null); }
     if (is_active !== undefined) { updates.push('is_active = ?'); values.push(is_active ? 1 : 0); }
     if (role !== undefined && role !== 'super_admin') { updates.push('role = ?'); values.push(role); }
 
@@ -197,6 +250,15 @@ const userService = {
       `UPDATE users SET ${updates.join(', ')} WHERE id = ?`,
       values
     );
+
+    // Update password if provided
+    if (data.password) {
+      if (data.password.length < 6) {
+        throw new Error('Password minimal 6 karakter');
+      }
+      const hashedPassword = await bcrypt.hash(data.password, 10);
+      await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, id]);
+    }
 
     await auditService.log({
       userId: updatedBy?.id,
