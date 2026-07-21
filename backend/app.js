@@ -1,7 +1,4 @@
-// ============================================
-// APP - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System
-// ============================================
+
 
 const express = require('express');
 const cors = require('cors');
@@ -9,7 +6,6 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
 
-// Routes
 const authRoutes = require('./routes/authRoutes');
 const barangRoutes = require('./routes/barangRoutes');
 const kategoriRoutes = require('./routes/kategoriRoutes');
@@ -29,13 +25,11 @@ const lokasiRoutes = require('./routes/lokasiRoutes');
 const jabatanRoutes = require('./routes/jabatanRoutes');
 const divisiRoutes = require('./routes/divisiRoutes');
 
-// Middleware
 const { auth, authorize } = require('./middleware/auth');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
-// Security & Logging
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
@@ -51,20 +45,16 @@ app.use(helmet({
 }));
 app.use(morgan('dev'));
 
-// CORS
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true,
 }));
 
-// Body Parser
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/barang', barangRoutes);
 app.use('/api/kategori', kategoriRoutes);
@@ -84,12 +74,10 @@ app.use('/api/lokasi', lokasiRoutes);
 app.use('/api/jabatan', jabatanRoutes);
 app.use('/api/divisi', divisiRoutes);
 
-// Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Server is running', timestamp: new Date().toISOString() });
 });
 
-// Error handler
 app.use(errorHandler);
 
 module.exports = app;

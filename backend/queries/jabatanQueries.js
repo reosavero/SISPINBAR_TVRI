@@ -1,6 +1,4 @@
-// ============================================
-// JABATAN QUERIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const jabatanQueries = {
   getAll: `

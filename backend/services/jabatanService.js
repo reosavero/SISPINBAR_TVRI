@@ -1,6 +1,4 @@
-// ============================================
-// JABATAN SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const jabatanQueries = require('../queries/jabatanQueries');
@@ -99,7 +97,7 @@ const jabatanService = {
     const jabatan = await jabatanService.getById(id);
     if (!jabatan) throw new Error('Jabatan tidak ditemukan');
 
-    // Check if jabatan is used by any pegawai
+    
     const [usedBy] = await pool.execute(
       'SELECT COUNT(*) AS total FROM users WHERE jabatan = ? AND role = \'pegawai\' AND deleted_at IS NULL',
       [jabatan.nama]

@@ -1,7 +1,4 @@
-// ============================================
-// CONSTANTS - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System (3 roles)
-// ============================================
+
 
 export const APP_NAME = 'SISPINBAR';
 export const APP_FULL_NAME = 'Sistem Peminjaman Barang';
@@ -114,8 +111,6 @@ export const ROLE_COLORS = {
     dot: 'bg-emerald-500',
   },
 };
-
-// ========== SIDEBAR MENUS ==========
 
 export const SIDEBAR_MENU_SUPER_ADMIN = [
   {
@@ -231,5 +226,4 @@ export const SIDEBAR_MENU_PEGAWAI = [
   },
 ];
 
-// Legacy - kept for backward compatibility
 export const SIDEBAR_MENU = SIDEBAR_MENU_ADMIN;

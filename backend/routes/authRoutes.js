@@ -1,6 +1,4 @@
-// ============================================
-// AUTH ROUTES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const express = require('express');
 const router = express.Router();
@@ -10,13 +8,11 @@ const { uploadAvatar } = require('../config/multer');
 const { verifyEmail } = require('../services/emailVerifyService');
 const emailVerificationService = require('../services/emailVerificationService');
 
-// Public routes
 router.post('/login', authController.login);
 router.post('/register', authController.register);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
-// Email domain verification (MX record check)
 router.post('/verify-email', async (req, res) => {
   try {
     const { email } = req.body;
@@ -30,8 +26,6 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-// ========== EMAIL VERIFICATION (OTP) ==========
-// Send OTP to email
 router.post('/send-otp', async (req, res) => {
   try {
     const { email } = req.body;
@@ -45,7 +39,6 @@ router.post('/send-otp', async (req, res) => {
   }
 });
 
-// Verify OTP code
 router.post('/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -59,7 +52,6 @@ router.post('/verify-otp', async (req, res) => {
   }
 });
 
-// Protected routes
 router.get('/profile', auth, authController.profile);
 router.put('/profile', auth, authController.updateProfile);
 router.put('/avatar', auth, ...uploadAvatar, authController.uploadAvatar);

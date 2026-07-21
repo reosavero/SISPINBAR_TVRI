@@ -1,7 +1,4 @@
-// ============================================
-// EMAIL VERIFICATION SERVICE - Sistem Peminjaman Barang TVRI
-// OTP-based email verification for registration
-// ============================================
+
 
 const pool = require('../config/db');
 const emailService = require('./emailService');
@@ -12,7 +9,6 @@ const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 3;
 const OTP_RESEND_COOLDOWN_SECONDS = 60;
 
-// ========== GENERATE OTP ==========
 const generateOtp = () => {
   const digits = '0123456789';
   let otp = '';
@@ -22,9 +18,8 @@ const generateOtp = () => {
   return otp;
 };
 
-// ========== SEND OTP ==========
 const sendOtp = async (email) => {
-  // Validate email format
+  
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !emailRegex.test(email.trim())) {
     throw new Error('Format email tidak valid');
@@ -32,13 +27,13 @@ const sendOtp = async (email) => {
 
   const trimmedEmail = email.trim().toLowerCase();
 
-  // Verify email domain
+  
   const emailCheck = await verifyEmail(trimmedEmail);
   if (!emailCheck.valid) {
     throw new Error(emailCheck.reason);
   }
 
-  // Check if email already registered
+  
   const [existing] = await pool.execute(
     'SELECT id FROM users WHERE email = ? AND deleted_at IS NULL',
     [trimmedEmail]
@@ -47,7 +42,7 @@ const sendOtp = async (email) => {
     throw new Error('Email sudah terdaftar. Silakan gunakan email lain.');
   }
 
-  // Check cooldown (prevent spamming)
+  
   const [recentOtp] = await pool.execute(
     'SELECT id, created_at FROM email_verifications WHERE email = ? AND created_at > DATE_SUB(NOW(), INTERVAL ? SECOND) ORDER BY created_at DESC LIMIT 1',
     [trimmedEmail, OTP_RESEND_COOLDOWN_SECONDS]
@@ -58,23 +53,23 @@ const sendOtp = async (email) => {
     throw new Error(`Tunggu ${remainingSeconds} detik sebelum mengirim ulang kode verifikasi`);
   }
 
-  // Invalidate any previous OTPs for this email
+  
   await pool.execute(
     'UPDATE email_verifications SET verified = -1 WHERE email = ? AND verified = 0',
     [trimmedEmail]
   );
 
-  // Generate new OTP
+  
   const otp = generateOtp();
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
-  // Save OTP to database
+  
   await pool.execute(
     'INSERT INTO email_verifications (email, otp_code, expires_at) VALUES (?, ?, ?)',
     [trimmedEmail, otp, expiresAt]
   );
 
-  // Send OTP email
+  
   const appName = process.env.APP_NAME || 'SISPINBAR - TVRI Jawa Timur';
   const subject = `${appName} - Kode Verifikasi Email`;
   const html = `
@@ -139,11 +134,10 @@ const sendOtp = async (email) => {
   };
 };
 
-// ========== VERIFY OTP ==========
 const verifyOtp = async (email, otp) => {
   const trimmedEmail = email.trim().toLowerCase();
 
-  // Find valid OTP for this email
+  
   const [records] = await pool.execute(
     `SELECT id, otp_code, attempts, verified, expires_at FROM email_verifications 
      WHERE email = ? AND verified = 0 AND expires_at > NOW() 
@@ -152,7 +146,7 @@ const verifyOtp = async (email, otp) => {
   );
 
   if (records.length === 0) {
-    // Check if expired
+    
     const [expired] = await pool.execute(
       `SELECT id FROM email_verifications WHERE email = ? AND verified = 0 ORDER BY created_at DESC LIMIT 1`,
       [trimmedEmail]
@@ -165,9 +159,9 @@ const verifyOtp = async (email, otp) => {
 
   const record = records[0];
 
-  // Check max attempts
+  
   if (record.attempts >= MAX_OTP_ATTEMPTS) {
-    // Invalidate the OTP
+    
     await pool.execute(
       'UPDATE email_verifications SET verified = -1 WHERE id = ?',
       [record.id]
@@ -175,25 +169,25 @@ const verifyOtp = async (email, otp) => {
     throw new Error(`Terlalu banyak percobaan salah. Silakan kirim ulang kode verifikasi baru.`);
   }
 
-  // Increment attempts
+  
   await pool.execute(
     'UPDATE email_verifications SET attempts = attempts + 1 WHERE id = ?',
     [record.id]
   );
 
-  // Check OTP match
+  
   if (record.otp_code !== otp) {
     const remaining = MAX_OTP_ATTEMPTS - (record.attempts + 1);
     throw new Error(`Kode verifikasi salah. Sisa percobaan: ${remaining} kali.`);
   }
 
-  // Mark as verified
+  
   await pool.execute(
     'UPDATE email_verifications SET verified = 1, attempts = attempts + 1 WHERE id = ?',
     [record.id]
   );
 
-  // Invalidate all other pending OTPs for this email
+  
   await pool.execute(
     'UPDATE email_verifications SET verified = -1 WHERE email = ? AND id != ? AND verified = 0',
     [trimmedEmail, record.id]
@@ -202,7 +196,6 @@ const verifyOtp = async (email, otp) => {
   return { verified: true, message: 'Email berhasil diverifikasi' };
 };
 
-// ========== CHECK IF EMAIL IS VERIFIED ==========
 const isEmailVerified = async (email) => {
   const trimmedEmail = email.trim().toLowerCase();
 
@@ -216,7 +209,6 @@ const isEmailVerified = async (email) => {
   return records.length > 0;
 };
 
-// ========== CLEANUP EXPIRED OTPs ==========
 const cleanupExpired = async () => {
   const [result] = await pool.execute(
     'DELETE FROM email_verifications WHERE expires_at < NOW() - INTERVAL 1 HOUR'

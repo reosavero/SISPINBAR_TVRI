@@ -1,6 +1,4 @@
-// ============================================
-// PERPANJANGAN QUERIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const perpanjanganQueries = {
   create: `

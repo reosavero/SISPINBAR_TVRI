@@ -1,7 +1,4 @@
-// ============================================
-// PAGINATION COMPONENT
-// Mobile-Responsive Enterprise Pagination
-// ============================================
+
 
 import { FiChevronLeft, FiChevronRight, FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
 
@@ -10,7 +7,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
 
   const getPages = () => {
     const pages = [];
-    const delta = window.innerWidth < 640 ? 1 : 2; // Fewer pages shown on mobile
+    const delta = window.innerWidth < 640 ? 1 : 2; 
     const start = Math.max(1, currentPage - delta);
     const end = Math.min(totalPages, currentPage + delta);
 
@@ -29,7 +26,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
         {startItem} - {endItem} dari {totalItems} data
       </div>
       <div className="flex items-center gap-1 order-1 sm:order-2">
-        {/* First page - hidden on very small screens */}
+        {
+}
         <button
           onClick={() => onPageChange(1)}
           disabled={currentPage === 1}
@@ -69,7 +67,8 @@ const Pagination = ({ currentPage, totalPages, onPageChange, totalItems, itemsPe
         >
           <FiChevronRight className="w-4 h-4" />
         </button>
-        {/* Last page - hidden on very small screens */}
+        {
+}
         <button
           onClick={() => onPageChange(totalPages)}
           disabled={currentPage === totalPages}

@@ -1,6 +1,4 @@
-// ============================================
-// FORMAT UTILITIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 export const formatCurrency = (value) => {
   return new Intl.NumberFormat('id-ID', {
@@ -42,8 +40,6 @@ export const formatDateTime = (dateString) => {
   }).format(date);
 };
 
-// Format tanggal dengan pukul: "12 Januari 2025 pukul 14:30"
-// Jika waktu 00:00 (belum disetujui/diapprove), tampilkan tanggal saja
 export const formatDatePukul = (dateString) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
@@ -54,25 +50,21 @@ export const formatDatePukul = (dateString) => {
   }).format(date);
   const jam = date.getHours();
   const menit = date.getMinutes();
-  // Jika waktu 00:00, kemungkinan belum disetujui - tampilkan tanggal saja
+  
   if (jam === 0 && menit === 0) return tanggal;
   return `${tanggal} pukul ${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`;
 };
 
-// Format jam saja: "14:30"
-// Jika waktu 00:00 (tidak bermakna), kembalikan '-'
 export const formatTime = (dateString) => {
   if (!dateString) return '-';
   const date = new Date(dateString);
   const jam = date.getHours();
   const menit = date.getMinutes();
-  // Jika waktu 00:00, kemungkinan data migrasi dari DATE - tidak bermakna sebagai jam
+  
   if (jam === 0 && menit === 0) return '-';
   return `${String(jam).padStart(2, '0')}:${String(menit).padStart(2, '0')}`;
 };
 
-// Format jam saja, selalu tampilkan (termasuk 00:00)
-// Digunakan untuk tanggal_pinjam yang selalu punya waktu valid
 export const formatTimeAlways = (dateString) => {
   if (!dateString) return '-';
   const date = new Date(dateString);

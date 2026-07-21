@@ -1,8 +1,4 @@
-// ============================================
-// HEADER COMPONENT - Sistem Peminjaman Barang TVRI
-// Admin: Notifikasi peminjaman/pengembalian dari pegawai
-// Pegawai: Semua notifikasi (read + unread), tetap tampil setelah dibaca
-// ============================================
+
 
 import { FiMenu, FiBell, FiX, FiArrowRight, FiClock, FiCheck, FiChevronDown, FiChevronUp, FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 import { MdAssignment, MdAssignmentTurnedIn, MdCheck, MdWarning, MdPerson } from 'react-icons/md';
@@ -13,7 +9,6 @@ import { formatRelativeTime, formatDatePukul } from '../../utils/format';
 import { useNavigate, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-// Konfigurasi ikon & warna per tipe notifikasi
 const notifTypeConfig = {
   peminjaman: {
     icon: MdAssignment,
@@ -73,7 +68,6 @@ const notifTypeConfig = {
   },
 };
 
-// Pegawai-specific config for better labels
 const pegawaiNotifLabel = {
   persetujuan: { title: 'Disetujui', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200', icon: FiCheckCircle, iconColor: 'text-emerald-600' },
   penolakan: { title: 'Ditolak', color: 'text-red-700', bg: 'bg-red-50', border: 'border-red-200', icon: FiAlertCircle, iconColor: 'text-red-600' },
@@ -87,14 +81,14 @@ const pegawaiNotifLabel = {
 const Header = ({ onMenuToggle }) => {
   const { isAdmin, isSuperAdmin, isPegawai, roleName, user } = useAuth();
 
-  // Role color scheme
+  
   const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.pegawai;
   const roleLabel = ROLE_LABELS[user?.role] || roleName;
   const navigate = useNavigate();
 
   const notifState = useNotifications();
   const {
-    // Admin
+    
     notifications,
     unreadCount,
     showDropdown,
@@ -108,7 +102,7 @@ const Header = ({ onMenuToggle }) => {
     markGroupAsRead,
     toggleGroup,
     refresh,
-    // Pegawai
+    
     pegawaiNotifs,
     pegawaiUnreadCount,
     pegawaiNotifLoading,
@@ -119,16 +113,16 @@ const Header = ({ onMenuToggle }) => {
 
   const location = useLocation();
 
-  // Admin & Super Admin: show notif bell on all pages
+  
   const showAdminNotif = !!isAdmin;
 
-  // Handle admin bell click
+  
   const handleBellClick = () => {
     if (!showDropdown) refresh();
     setShowDropdown(!showDropdown);
   };
 
-  // Admin notification click — navigate immediately, mark as read in background
+  
   const handleAdminNotifClick = (notif) => {
     const routeMap = {
       peminjaman: '/peminjaman',
@@ -151,7 +145,7 @@ const Header = ({ onMenuToggle }) => {
     markAsRead(item.id);
   };
 
-  // Navigate from grouped notification — navigate immediately, mark all as read in background
+  
   const handleGroupNavigate = (group) => {
     const routeMap = {
       peminjaman: '/peminjaman',
@@ -176,13 +170,13 @@ const Header = ({ onMenuToggle }) => {
     await markGroupAsRead(group);
   };
 
-  // Pegawai: mark all read — notifikasi tetap tampil
+  
   const handlePegawaiMarkAllRead = async () => {
     await markAllPegawaiNotifRead();
     toast.success('Semua notifikasi ditandai dibaca');
   };
 
-  // Pegawai notification click — navigate immediately, mark as read in background
+  
   const handlePegawaiNotifClick = (notif) => {
     const routeMap = {
       peminjaman: '/peminjaman',
@@ -196,7 +190,7 @@ const Header = ({ onMenuToggle }) => {
     markPegawaiNotifRead(notif.id);
   };
 
-  // Pegawai bell click
+  
   const handlePegawaiBellClick = () => {
     if (!showDropdown) {
       fetchPegawaiNotifications();
@@ -207,7 +201,8 @@ const Header = ({ onMenuToggle }) => {
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-gray-100">
       <div className="flex items-center justify-between px-3 sm:px-4 lg:px-6 h-14 sm:h-16">
-        {/* Left - Burger Menu (Mobile/Tablet) */}
+        {
+}
         <button
           onClick={onMenuToggle}
           className="lg:hidden p-2 -ml-1 rounded-xl hover:bg-gray-100 active:bg-gray-200 transition-colors touch-manipulation"
@@ -216,7 +211,8 @@ const Header = ({ onMenuToggle }) => {
           <FiMenu className="w-5 h-5 text-gray-600" />
         </button>
 
-        {/* Center - App Name + Role Badge */}
+        {
+}
         <div className="flex items-center gap-2">
           <h1 className="text-sm font-bold text-[#003B71] truncate">
             {APP_NAME}
@@ -227,9 +223,11 @@ const Header = ({ onMenuToggle }) => {
           </span>
         </div>
 
-        {/* Right - Notification Bell */}
+        {
+}
         <div className="relative" ref={dropdownRef}>
-          {/* Admin Notif Bell (visible on all pages) */}
+          {
+}
           {showAdminNotif && (
             <button
               onClick={handleBellClick}
@@ -244,7 +242,8 @@ const Header = ({ onMenuToggle }) => {
             </button>
           )}
 
-          {/* Pegawai Notif Bell (always visible) */}
+          {
+}
           {!isAdmin && (
             <button
               onClick={handlePegawaiBellClick}
@@ -259,10 +258,12 @@ const Header = ({ onMenuToggle }) => {
             </button>
           )}
 
-          {/* ========== ADMIN NOTIFICATION DROPDOWN ========== */}
+          {
+}
           {showAdminNotif && showDropdown && (
             <div className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-[400px] max-h-[85vh] sm:max-h-[540px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex flex-col">
-              {/* Header */}
+              {
+}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#005BAC] to-[#003B71] flex-shrink-0">
                 <div>
                   <h3 className="text-sm font-bold text-white">Notifikasi</h3>
@@ -290,7 +291,8 @@ const Header = ({ onMenuToggle }) => {
                 </div>
               </div>
 
-              {/* Notification List */}
+              {
+}
               <div className="flex-1 overflow-y-auto">
                 {loading ? (
                   <div className="flex items-center justify-center py-12">
@@ -331,7 +333,8 @@ const Header = ({ onMenuToggle }) => {
                 )}
               </div>
 
-              {/* Footer */}
+              {
+}
               <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
                 <button
                   onClick={() => { navigate('/riwayat'); setShowDropdown(false); }}
@@ -344,10 +347,12 @@ const Header = ({ onMenuToggle }) => {
             </div>
           )}
 
-          {/* ========== PEGAWAI NOTIFICATION DROPDOWN ========== */}
+          {
+}
           {!isAdmin && showDropdown && (
             <div className="absolute right-0 top-full mt-2 w-[calc(100vw-32px)] sm:w-[400px] max-h-[85vh] sm:max-h-[540px] bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 flex flex-col">
-              {/* Header */}
+              {
+}
               <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-emerald-500 to-emerald-600 flex-shrink-0">
                 <div>
                   <h3 className="text-sm font-bold text-white">Notifikasi</h3>
@@ -375,7 +380,8 @@ const Header = ({ onMenuToggle }) => {
                 </div>
               </div>
 
-              {/* Notification List */}
+              {
+}
               <div className="flex-1 overflow-y-auto">
                 {pegawaiNotifLoading ? (
                   <div className="flex items-center justify-center py-12">
@@ -399,7 +405,8 @@ const Header = ({ onMenuToggle }) => {
                           onClick={() => handlePegawaiNotifClick(notif)}
                           className="flex items-start gap-3 px-4 py-3 hover:bg-emerald-50/50 cursor-pointer transition-colors bg-emerald-50/30"
                         >
-                          {/* Icon */}
+                          {
+}
                           <div className="relative flex-shrink-0 mt-0.5">
                             <div className={`w-10 h-10 rounded-xl ${config.bg} border ${config.border} flex items-center justify-center`}>
                               <IconComp className={`w-[18px] h-[18px] ${config.iconColor}`} />
@@ -407,7 +414,8 @@ const Header = ({ onMenuToggle }) => {
                             <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white"></span>
                           </div>
 
-                          {/* Content */}
+                          {
+}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-1.5 mb-0.5">
                               <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded ${config.bg} ${config.color}`}>
@@ -433,7 +441,8 @@ const Header = ({ onMenuToggle }) => {
                             </div>
                           </div>
 
-                          {/* Arrow */}
+                          {
+}
                           <FiArrowRight className="w-4 h-4 text-gray-300 flex-shrink-0 mt-3" />
                         </div>
                       );
@@ -442,7 +451,8 @@ const Header = ({ onMenuToggle }) => {
                 )}
               </div>
 
-              {/* Footer */}
+              {
+}
               <div className="px-4 py-3 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
                 <button
                   onClick={() => { navigate('/riwayat'); setShowDropdown(false); }}
@@ -460,9 +470,6 @@ const Header = ({ onMenuToggle }) => {
   );
 };
 
-// ============================================
-// Single Notification Item (1 pegawai, 1 aksi)
-// ============================================
 const SingleNotifItem = ({ notif, onClick }) => {
   const config = notifTypeConfig[notif.type] || notifTypeConfig.info;
   const IconComp = config.icon;
@@ -474,7 +481,8 @@ const SingleNotifItem = ({ notif, onClick }) => {
       onClick={() => onClick(notif)}
       className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors group"
     >
-      {/* Icon */}
+      {
+}
       <div className="relative flex-shrink-0 mt-0.5">
         <div className={`w-10 h-10 rounded-xl ${config.bg} border ${config.border} flex items-center justify-center transition-transform group-hover:scale-105`}>
           <IconComp className={`w-[18px] h-[18px] ${config.color}`} />
@@ -482,7 +490,8 @@ const SingleNotifItem = ({ notif, onClick }) => {
         <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${config.dot} rounded-full border-2 border-white`}></span>
       </div>
 
-      {/* Content */}
+      {
+}
       <div className="flex-1 min-w-0">
         {pegawaiName && (
           <div className="flex items-center gap-1.5 mb-0.5">
@@ -503,29 +512,27 @@ const SingleNotifItem = ({ notif, onClick }) => {
         </div>
       </div>
 
-      {/* Arrow */}
+      {
+}
       <FiArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#005BAC] transition-colors flex-shrink-0 mt-3" />
     </div>
   );
 };
 
-// ============================================
-// Grouped Notification Item (1 pegawai, banyak aksi)
-// Main click → navigate to page
-// Bottom-right button → toggle dropdown showing item list
-// ============================================
 const GroupedNotifItem = ({ group, isExpanded, onToggle, onItemClick, onNavigate, onMarkGroupRead }) => {
   const config = notifTypeConfig[group.group_type] || notifTypeConfig.info;
   const IconComp = config.icon;
 
   return (
     <div className="border-b border-gray-50">
-      {/* Main notification area — clickable to navigate */}
+      {
+}
       <div
         onClick={() => onNavigate(group)}
         className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors group"
       >
-        {/* Icon with count badge */}
+        {
+}
         <div className="relative flex-shrink-0 mt-0.5">
           <div className={`w-10 h-10 rounded-xl ${config.bg} border ${config.border} flex items-center justify-center transition-transform group-hover:scale-105`}>
             <IconComp className={`w-[18px] h-[18px] ${config.color}`} />
@@ -535,7 +542,8 @@ const GroupedNotifItem = ({ group, isExpanded, onToggle, onItemClick, onNavigate
           </span>
         </div>
 
-        {/* Content */}
+        {
+}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <MdPerson className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
@@ -554,11 +562,13 @@ const GroupedNotifItem = ({ group, isExpanded, onToggle, onItemClick, onNavigate
           </div>
         </div>
 
-        {/* Navigate arrow */}
+        {
+}
         <FiArrowRight className="w-4 h-4 text-gray-300 group-hover:text-[#005BAC] transition-colors flex-shrink-0 mt-3" />
       </div>
 
-      {/* Bottom bar: mark read + toggle detail dropdown */}
+      {
+}
       <div className="flex items-center justify-between px-4 pb-2 pt-0">
         <button
           onClick={(e) => onMarkGroupRead(e, group)}
@@ -581,7 +591,8 @@ const GroupedNotifItem = ({ group, isExpanded, onToggle, onItemClick, onNavigate
         </button>
       </div>
 
-      {/* Expanded Items — dropdown list of barang */}
+      {
+}
       {isExpanded && (
         <div className="bg-gray-50/50 border-t border-gray-100">
           {group.items.map((item) => (

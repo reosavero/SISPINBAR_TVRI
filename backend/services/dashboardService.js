@@ -1,6 +1,4 @@
-// ============================================
-// DASHBOARD SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const dashboardQueries = require('../queries/dashboardQueries');
@@ -9,7 +7,7 @@ const dashboardService = {
   getStats: async () => {
     const [rows] = await pool.execute(dashboardQueries.getStats);
     const row = rows[0];
-    // Convert snake_case to camelCase for frontend
+    
     return {
       totalBarang: row.total_barang,
       barangTersedia: row.barang_tersedia,
@@ -29,16 +27,16 @@ const dashboardService = {
     const targetYear = year || new Date().getFullYear();
     const [rows] = await pool.execute(dashboardQueries.getMonthlyLoans, [targetYear]);
 
-    // Map database results to month numbers
+    
     const monthData = {};
     rows.forEach(row => {
       monthData[row.bulan_num] = row.total;
     });
 
-    // Indonesian month names (short)
+    
     const bulanNama = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 
-    // Fill all 12 months, defaulting to 0 for months without data
+    
     const result = bulanNama.map((nama, idx) => ({
       bulan: nama,
       bulan_num: idx + 1,
@@ -58,7 +56,7 @@ const dashboardService = {
     return rows;
   },
 
-  // ========== PEGAWAI DASHBOARD ==========
+  
 
   getPegawaiStats: async (pegawaiId) => {
     const [rows] = await pool.execute(dashboardQueries.getPegawaiStats, [

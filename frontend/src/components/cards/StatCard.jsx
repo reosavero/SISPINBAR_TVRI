@@ -1,7 +1,4 @@
-// ============================================
-// STAT CARD COMPONENT
-// Mobile-Responsive Enterprise Stat Card
-// ============================================
+
 
 import { motion } from 'framer-motion';
 

@@ -1,14 +1,11 @@
-// ============================================
-// RIWAYAT CONTROLLER - Sistem Peminjaman Barang TVRI
-// Delete riwayat records (super_admin only)
-// ============================================
+
 
 const riwayatService = require('../services/riwayatService');
 const auditService = require('../services/auditService');
 
 const riwayatController = {
 
-  // Delete a single riwayat record
+  
   deleteRecord: async (req, res) => {
     try {
       const { id } = req.params;
@@ -43,7 +40,7 @@ const riwayatController = {
     }
   },
 
-  // Bulk delete riwayat for a given month/year
+  
   deleteBulkByMonth: async (req, res) => {
     try {
       const { year, month } = req.body;
@@ -89,7 +86,7 @@ const riwayatController = {
     }
   },
 
-  // Count records that will be deleted in bulk (preview)
+  
   countBulkByMonth: async (req, res) => {
     try {
       const { year, month } = req.query;

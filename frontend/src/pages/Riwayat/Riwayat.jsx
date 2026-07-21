@@ -1,6 +1,4 @@
-// ============================================
-// RIWAYAT PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
@@ -33,21 +31,21 @@ const Riwayat = () => {
   const [imgErrors, setImgErrors] = useState({});
   const [exporting, setExporting] = useState(false);
 
-  // Delete states (super_admin only)
+  
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Bulk delete states (super_admin only)
+  
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [bulkDeleteInfo, setBulkDeleteInfo] = useState(null);
   const [bulkDeleting, setBulkDeleting] = useState(false);
 
-  // Detail modal
+  
   const [showDetail, setShowDetail] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
 
-  // Archive state
+  
   const [archiveYears, setArchiveYears] = useState([]);
   const [selectedYear, setSelectedYear] = useState(null);
   const [archiveMonths, setArchiveMonths] = useState([]);
@@ -57,11 +55,11 @@ const Riwayat = () => {
   const [archiveSummary, setArchiveSummary] = useState({ total: 0, dikembalikan: 0, dipinjam: 0, ditolak: 0, menunggu: 0 });
   const [loadingArchive, setLoadingArchive] = useState(false);
   const [exportingArchive, setExportingArchive] = useState(false);
-  const [archiveBreadcrumb, setArchiveBreadcrumb] = useState([]); // 'years' | 'months' | 'data'
+  const [archiveBreadcrumb, setArchiveBreadcrumb] = useState([]); 
 
   useEffect(() => { fetchRiwayat(); }, [currentPage, search]);
 
-  // Load archive years on mount (admin only)
+  
   useEffect(() => {
     if (isAdmin) fetchArchiveYears();
   }, [isAdmin]);
@@ -94,7 +92,7 @@ const Riwayat = () => {
     setLoading(false);
   };
 
-  // ========== ARCHIVE FUNCTIONS ==========
+  
   const fetchArchiveYears = async () => {
     try {
       const res = await api.get('/archive/years');
@@ -134,12 +132,12 @@ const Riwayat = () => {
 
   const handleArchiveBack = () => {
     if (archiveBreadcrumb.length === 3) {
-      // From data -> months
+      
       setArchiveData([]);
       setSelectedMonth(null);
       setArchiveBreadcrumb(['years', 'months']);
     } else if (archiveBreadcrumb.length === 2) {
-      // From months -> years
+      
       setArchiveMonths([]);
       setSelectedYear(null);
       setArchiveBreadcrumb(['years']);
@@ -186,9 +184,9 @@ const Riwayat = () => {
     setShowDetail(true);
   };
 
-  // ===== DELETE HANDLERS (super_admin only) =====
+  
 
-  // Delete single record
+  
   const handleDeleteRecord = (item) => {
     setDeleteItem(item);
     setShowDeleteConfirm(true);
@@ -201,7 +199,7 @@ const Riwayat = () => {
       toast.success(res.data.message || 'Riwayat berhasil dihapus');
       setShowDeleteConfirm(false);
       setDeleteItem(null);
-      // Refresh data
+      
       fetchRiwayat();
       if (isAdmin) fetchArchiveYears();
     } catch (err) {
@@ -211,7 +209,7 @@ const Riwayat = () => {
     }
   };
 
-  // Bulk delete by month/year (archive)
+  
   const handleBulkDeletePreview = async (year, month) => {
     try {
       const res = await api.get('/archive/delete/count', { params: { year, month } });
@@ -234,13 +232,13 @@ const Riwayat = () => {
       toast.success(res.data.message || `Berhasil menghapus ${bulkDeleteInfo.deletable} riwayat`);
       setShowBulkDeleteConfirm(false);
       setBulkDeleteInfo(null);
-      // Refresh archive
+      
       fetchArchiveYears();
-      // If currently viewing this month's data, refresh
+      
       if (selectedYear === bulkDeleteInfo.year && selectedMonth === bulkDeleteInfo.month) {
         fetchArchiveData(selectedYear, selectedMonth, archivePagination.page);
       }
-      // Reset archive view
+      
       setSelectedMonth(null);
       setArchiveData([]);
       setArchiveBreadcrumb(['years']);
@@ -251,7 +249,7 @@ const Riwayat = () => {
     }
   };
 
-  // Export handler for current data
+  
   const handleExportExcel = async () => {
     setExporting(true);
     try {
@@ -290,7 +288,8 @@ const Riwayat = () => {
 
   return (
     <div className="page-container">
-      {/* Header + Search + Export */}
+      {
+}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="page-title">{isAdmin ? 'Riwayat Transaksi' : 'Riwayat Saya'}</h1>
@@ -324,7 +323,8 @@ const Riwayat = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
+      {
+}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 mb-4">
         {[
           { label: 'Total Transaksi', value: summary.total, color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
@@ -339,7 +339,8 @@ const Riwayat = () => {
         ))}
       </div>
 
-      {/* Table */}
+      {
+}
       <div className="bg-white rounded-2xl shadow-sm">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
@@ -438,7 +439,8 @@ const Riwayat = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden space-y-3 p-4">
           {riwayat.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -499,10 +501,12 @@ const Riwayat = () => {
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalItems} itemsPerPage={itemsPerPage} />
       </div>
 
-      {/* ========== ARSIP RIWAYAT (Admin Only) ========== */}
+      {
+}
       {isAdmin && (
         <div className="mt-8">
-          {/* Section Header */}
+          {
+}
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
               <FiArchive className="w-5 h-5 text-white" />
@@ -514,7 +518,8 @@ const Riwayat = () => {
           </div>
 
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            {/* Breadcrumb */}
+            {
+}
             {archiveBreadcrumb.length > 0 && (
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center gap-2 text-sm">
                 <button
@@ -543,7 +548,8 @@ const Riwayat = () => {
               </div>
             )}
 
-            {/* Back button when in months or data view */}
+            {
+}
             {(archiveBreadcrumb.length > 0) && (
               <div className="px-4 py-2.5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                 <button
@@ -559,7 +565,8 @@ const Riwayat = () => {
             )}
 
             <div className="p-4">
-              {/* YEARS VIEW */}
+              {
+}
               {!selectedYear && (
                 <div>
                   {archiveYears.length === 0 ? (
@@ -587,7 +594,8 @@ const Riwayat = () => {
                 </div>
               )}
 
-              {/* MONTHS VIEW */}
+              {
+}
               {selectedYear && !selectedMonth && (
                 <div>
                   {loadingArchive ? (
@@ -623,10 +631,12 @@ const Riwayat = () => {
                 </div>
               )}
 
-              {/* DATA VIEW */}
+              {
+}
               {selectedYear && selectedMonth && (
                 <div>
-                  {/* Summary + Export */}
+                  {
+}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                     <div className="flex flex-wrap gap-2">
                       <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-medium">
@@ -670,7 +680,8 @@ const Riwayat = () => {
                     </div>
                   </div>
 
-                  {/* Archive Data Table */}
+                  {
+}
                   {loadingArchive ? (
                     <div className="flex justify-center py-12">
                       <svg className="animate-spin w-8 h-8 text-[#005BAC]" viewBox="0 0 24 24" fill="none">
@@ -685,7 +696,8 @@ const Riwayat = () => {
                     </div>
                   ) : (
                     <>
-                      {/* Desktop Table */}
+                      {
+}
                       <div className="hidden md:block overflow-x-auto">
                         <table className="w-full">
                           <thead>
@@ -761,7 +773,8 @@ const Riwayat = () => {
                         </table>
                       </div>
 
-                      {/* Mobile Cards */}
+                      {
+}
                       <div className="md:hidden space-y-2">
                         {archiveData.map((item) => {
                           const fotoUrl = item.barang_foto ? getBarangFotoUrl(item.barang_foto) : null;
@@ -811,7 +824,8 @@ const Riwayat = () => {
                         })}
                       </div>
 
-                      {/* Pagination for archive */}
+                      {
+}
                       <Pagination
                         currentPage={archivePagination.page}
                         totalPages={archivePagination.totalPages}
@@ -828,7 +842,8 @@ const Riwayat = () => {
         </div>
       )}
 
-      {/* Detail Modal */}
+      {
+}
       <Modal isOpen={showDetail} onClose={() => { setShowDetail(false); setDetailItem(null); }} title="Detail Riwayat" size="md">
         {detailItem && (() => {
           const fotoPengembalianUrl = detailItem.foto_pengembalian ? getBarangFotoUrl(detailItem.foto_pengembalian) : null;
@@ -886,7 +901,8 @@ const Riwayat = () => {
                 </div>
               </div>
 
-              {/* Foto Bukti Peminjaman */}
+              {
+}
               <div className="border-t border-gray-100 pt-4">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-8 h-8 rounded-lg bg-[#005BAC] flex items-center justify-center">
@@ -914,7 +930,8 @@ const Riwayat = () => {
                 )}
               </div>
 
-              {/* Informasi Pengembalian */}
+              {
+}
               {(detailItem.foto_pengembalian || detailItem.kondisi_pengembalian || detailItem.catatan_pengembalian || detailItem.tanggal_kembali_aktual) && (
                 <div className="border-t border-gray-100 pt-4">
                   <div className="flex items-center gap-2 mb-4">
@@ -948,7 +965,8 @@ const Riwayat = () => {
                       <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-700">{detailItem.catatan_pengembalian}</div>
                     </div>
                   )}
-                  {/* Foto Bukti Pengembalian */}
+                  {
+}
                   <div>
                     <p className="text-xs text-gray-400 mb-2">Foto Bukti Pengembalian</p>
                     {fotoPengembalianUrl ? (
@@ -980,7 +998,8 @@ const Riwayat = () => {
         })()}
       </Modal>
 
-      {/* Delete Single Record Confirm (super_admin only) */}
+      {
+}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => { setShowDeleteConfirm(false); setDeleteItem(null); }}
@@ -992,7 +1011,8 @@ const Riwayat = () => {
         loading={deleting}
       />
 
-      {/* Bulk Delete Confirm (super_admin only) */}
+      {
+}
       <ConfirmDialog
         isOpen={showBulkDeleteConfirm}
         onClose={() => { setShowBulkDeleteConfirm(false); setBulkDeleteInfo(null); }}

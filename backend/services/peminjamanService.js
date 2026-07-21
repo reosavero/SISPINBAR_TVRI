@@ -1,6 +1,4 @@
-// ============================================
-// PEMINJAMAN SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const peminjamanQueries = require('../queries/peminjamanQueries');
@@ -14,11 +12,11 @@ const peminjamanService = {
     const page = parseInt(params.page) || 1;
     const search = params.search || null;
     const status = params.status || null;
-    const pegawai_id = params.pegawai_id || null; // Filter berdasarkan pegawai
+    const pegawai_id = params.pegawai_id || null; 
     const { offset } = paginate(page, 10);
     const itemsPerPage = 10;
 
-    // Build WHERE clause dynamically
+    
     let whereConditions = [];
     let whereParams = [];
 
@@ -99,7 +97,7 @@ const peminjamanService = {
       throw new Error(`Hanya tersedia ${tersedia} unit. Tidak bisa meminjam ${requestedJumlah} unit`);
     }
 
-    // Generate nomor peminjaman: cari nomor urut terbesar di bulan ini, lalu +1
+    
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -115,25 +113,31 @@ const peminjamanService = {
     }
     const nomor = `PIN-${year}${month}-${String(urutan).padStart(4, '0')}`;
 
+    
+    const todayCreate = new Date().toISOString().split('T')[0];
+    if (tanggal_pinjam && tanggal_pinjam < todayCreate) {
+      throw new Error('Tanggal pinjam tidak boleh sebelum hari ini');
+    }
+
     const [result] = await pool.execute(peminjamanQueries.create, [
       nomor, pegawai_id, barang_id, jumlah || 1,
       tanggal_pinjam || null,
-      // Set tanggal_kembali_rencana to end of day (23:59:59)
+      
       tanggal_kembali_rencana ? (tanggal_kembali_rencana.includes(' ') ? tanggal_kembali_rencana : tanggal_kembali_rencana + ' 23:59:59') : null,
       keperluan || null, foto || null,
     ]);
 
-    // Update barang status based on available units
+    
     await updateBarangStatus(barang_id);
 
-    // Get pegawai and barang info for notification
+    
     try {
       const [pegawaiRows] = await pool.execute('SELECT nama FROM users WHERE id = ?', [pegawai_id]);
       const [barangRows] = await pool.execute('SELECT nama_barang FROM barang WHERE id = ?', [barang_id]);
       const pegawaiNama = pegawaiRows[0]?.nama || 'Pegawai';
       const barangNama = barangRows[0]?.nama_barang || 'barang';
       await notificationService.create({
-        userId: null, // null = broadcast to all admins
+        userId: null, 
         title: 'Permintaan Peminjaman Baru',
         message: `${pegawaiNama} mengajukan peminjaman ${barangNama} (${nomor})`,
         type: 'peminjaman',
@@ -152,16 +156,16 @@ const peminjamanService = {
     if (!rows[0]) throw new Error('Peminjaman tidak ditemukan');
     if (rows[0].status !== 'Menunggu Persetujuan') throw new Error('Peminjaman tidak dapat disetujui');
 
-    // Set tanggal_pinjam to current datetime (auto pukul saat disetujui)
+    
     await pool.execute(
       'UPDATE peminjaman SET status = ?, tanggal_pinjam = NOW() WHERE id = ?',
       ['Dipinjam', id]
     );
 
-    // Update barang status
+    
     await updateBarangStatus(rows[0].barang_id);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -172,7 +176,7 @@ const peminjamanService = {
       ipAddress: user?.ip,
     });
 
-    // Notification to pegawai that peminjaman is approved
+    
     if (rows[0].pegawai_id) {
       await notificationService.create({
         pegawaiId: rows[0].pegawai_id,
@@ -193,12 +197,12 @@ const peminjamanService = {
     if (!peminjaman) throw new Error('Peminjaman tidak ditemukan');
     await pool.execute(peminjamanQueries.reject, [id]);
 
-    // Update barang status based on available units
+    
     if (peminjaman) {
       await updateBarangStatus(peminjaman.barang_id);
     }
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -209,7 +213,7 @@ const peminjamanService = {
       ipAddress: user?.ip,
     });
 
-    // Notification to pegawai
+    
     if (peminjaman.pegawai_id) {
       await notificationService.create({
         pegawaiId: peminjaman.pegawai_id,
@@ -229,16 +233,16 @@ const peminjamanService = {
     return { id };
   },
 
-  // Pegawai can update their own peminjaman if still Menunggu Persetujuan
+  
   update: async (id, data, pegawaiId) => {
-    // Verify ownership and status
+    
     const [rows] = await pool.execute(peminjamanQueries.getById, [id]);
     const peminjaman = rows[0];
     if (!peminjaman) throw new Error('Peminjaman tidak ditemukan');
     if (peminjaman.pegawai_id !== pegawaiId) throw new Error('Anda tidak memiliki akses untuk mengedit peminjaman ini');
     if (peminjaman.status !== 'Menunggu Persetujuan') throw new Error('Peminjaman yang sudah diproses tidak dapat diedit');
 
-    // Barang cannot be changed — always use the original barang_id
+    
     const barang_id = peminjaman.barang_id;
     const { jumlah, tanggal_pinjam, tanggal_kembali_rencana, keperluan, foto } = data;
     const requestedJumlah = jumlah || 1;
@@ -246,7 +250,7 @@ const peminjamanService = {
     const [[barang]] = await pool.execute('SELECT jumlah FROM barang WHERE id = ?', [barang_id]);
     if (!barang) throw new Error('Barang tidak ditemukan');
 
-    // Check stock: subtract current loan count since we're editing the same peminjaman
+    
     const [[borrowed]] = await pool.execute(
       `SELECT COALESCE(SUM(jumlah), 0) AS total_dipinjam FROM peminjaman WHERE barang_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi') AND id != ?`,
       [barang_id, id]
@@ -257,17 +261,23 @@ const peminjamanService = {
       throw new Error(`Hanya tersedia ${tersedia} unit. Tidak bisa meminjam ${requestedJumlah} unit`);
     }
 
+    
+    const todayUpdate = new Date().toISOString().split('T')[0];
+    if (tanggal_pinjam && tanggal_pinjam < todayUpdate) {
+      throw new Error('Tanggal pinjam tidak boleh sebelum hari ini');
+    }
+
     await pool.execute(peminjamanQueries.update, [barang_id, requestedJumlah, tanggal_pinjam || null, tanggal_kembali_rencana ? (tanggal_kembali_rencana.includes(' ') ? tanggal_kembali_rencana : tanggal_kembali_rencana + ' 23:59:59') : null, keperluan || null, foto, id]);
 
-    // Update barang status
+    
     await updateBarangStatus(barang_id);
 
     return { id, barang_id, ...data };
   },
 
-  // Pegawai can delete their own peminjaman if still Menunggu Persetujuan
+  
   deleteByPegawai: async (id, pegawaiId) => {
-    // Verify ownership and status
+    
     const [rows] = await pool.execute(peminjamanQueries.getById, [id]);
     const peminjaman = rows[0];
     if (!peminjaman) throw new Error('Peminjaman tidak ditemukan');
@@ -277,7 +287,7 @@ const peminjamanService = {
     const barangId = peminjaman.barang_id;
     await pool.execute(peminjamanQueries.delete, [id]);
 
-    // Update barang status since we freed up stock
+    
     await updateBarangStatus(barangId);
 
     return { id };

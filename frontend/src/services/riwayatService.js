@@ -1,6 +1,5 @@
-// ============================================
-// RIWAYAT SERVICE
-// ============================================
+
+
 import api from './api';
 
 export const riwayatService = {

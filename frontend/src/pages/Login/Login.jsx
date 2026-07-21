@@ -1,7 +1,4 @@
-// ============================================
-// LOGIN PAGE - Sistem Peminjaman Barang TVRI
-// With self-registration for Pegawai
-// ============================================
+
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -25,19 +22,19 @@ const Login = () => {
 
   const { jabatanList, divisiList } = useMasterData();
 
-  // Register state
+  
   const [regForm, setRegForm] = useState({
     nama: '', nip: '', jabatan: '', divisi: '', email: '', nomor_hp: '', username: '', password: '',
   });
   const [showRegPassword, setShowRegPassword] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
-  const [regStep, setRegStep] = useState(1); // 1 = data pegawai, 2 = verify OTP, 3 = akun login
+  const [regStep, setRegStep] = useState(1); 
   const [regErrors, setRegErrors] = useState({});
   const [regSuccess, setRegSuccess] = useState(false);
   const [emailVerifying, setEmailVerifying] = useState(false);
-  const [emailVerified, setEmailVerified] = useState(null); // null = belum verify, true = valid, false = invalid
+  const [emailVerified, setEmailVerified] = useState(null); 
 
-  // OTP state
+  
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -46,10 +43,10 @@ const Login = () => {
   const [otpVerifying, setOtpVerifying] = useState(false);
   const [otpError, setOtpError] = useState('');
 
-  // Forgot password state
-  const [view, setView] = useState('login'); // login | forgot | register | success
+  
+  const [view, setView] = useState('login'); 
 
-  // Redirect jika sudah login
+  
   useEffect(() => {
     if (!authLoading && isAuthenticated) {
       if (isSuperAdmin || isAdmin) {
@@ -60,7 +57,7 @@ const Login = () => {
     }
   }, [isAuthenticated, isAdmin, authLoading, navigate]);
 
-  // ========== LOGIN ==========
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!username || !password) {
@@ -86,7 +83,7 @@ const Login = () => {
     setLoading(false);
   };
 
-  // ========== REGISTER ==========
+  
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!otpVerified) {
@@ -133,7 +130,7 @@ const Login = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // ========== EMAIL VERIFICATION (real-time on blur) ==========
+  
   const handleEmailBlur = async () => {
     const email = regForm.email.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -156,7 +153,7 @@ const Login = () => {
         }
       }
     } catch (err) {
-      // Jika API error, biarkan lanjut (jangan blokir)
+      
       setEmailVerified(null);
     } finally {
       setEmailVerifying(false);
@@ -165,12 +162,12 @@ const Login = () => {
 
   const handleEmailChange = (value) => {
     setRegForm({ ...regForm, email: value });
-    // Reset verification saat email berubah
+    
     if (emailVerified !== null) {
       setEmailVerified(null);
       setRegErrors(prev => ({ ...prev, email: '' }));
     }
-    // Reset OTP state saat email berubah
+    
     if (otpSent) {
       setOtpSent(false);
       setOtpVerified(false);
@@ -183,14 +180,14 @@ const Login = () => {
     if (validateStep1()) {
       setRegStep(2);
       setRegErrors({});
-      // Auto-send OTP when moving to step 2
+      
       if (!otpSent) {
         handleSendOtp();
       }
     }
   };
 
-  // ========== OTP VERIFICATION ==========
+  
   const handleSendOtp = async () => {
     setOtpLoading(true);
     setOtpError('');
@@ -201,7 +198,7 @@ const Login = () => {
         setOtpVerified(false);
         setOtpCode('');
         toast.success('Kode verifikasi telah dikirim ke email Anda');
-        // Start cooldown
+        
         setOtpCooldown(60);
         const timer = setInterval(() => {
           setOtpCooldown(prev => {
@@ -246,12 +243,12 @@ const Login = () => {
     setOtpCooldown(0);
   };
 
-  // ========== KONTAK ADMIN ==========
+  
   const ADMIN_PHONE = '082174948586';
   const ADMIN_PHONE_FORMATTED = '0821-7494-8586';
   const ADMIN_WA_LINK = `https://wa.me/6282174948586?text=${encodeURIComponent('Halo Admin, saya lupa password akun SISPINBAR. Mohon bantuan untuk reset password.')}`;
 
-  // ========== SHARED ==========
+  
   const renderLogo = () => (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -270,7 +267,7 @@ const Login = () => {
     </motion.div>
   );
 
-  // ========== VIEW: LOGIN ==========
+  
   const renderLogin = () => (
     <motion.div
       key="login"
@@ -361,7 +358,7 @@ const Login = () => {
     </motion.div>
   );
 
-  // ========== VIEW: REGISTER ==========
+  
   const renderRegister = () => (
     <motion.div
       key="register"
@@ -375,7 +372,8 @@ const Login = () => {
         <p className="text-sm text-gray-500 mt-1">{regStep === 1 ? 'Lengkapi data pegawai Anda' : regStep === 2 ? 'Verifikasi email Anda' : 'Buat username dan password'}</p>
       </div>
 
-      {/* Step Indicator */}
+      {
+}
       <div className="flex items-center justify-center gap-2 mb-6">
         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${regStep >= 2 ? 'bg-emerald-100 text-emerald-700' : 'bg-[#005BAC] text-white'}`}>
           {regStep > 1 && <FiCheckCircle className="w-3.5 h-3.5" />}
@@ -393,7 +391,8 @@ const Login = () => {
       </div>
 
       {regStep === 1 ? (
-        /* ===== STEP 1: Data Pegawai ===== */
+        
+
         <form onSubmit={(e) => { e.preventDefault(); handleNextStep(); }}>
           <div className="space-y-4">
             <div>
@@ -513,9 +512,11 @@ const Login = () => {
           </button>
         </form>
       ) : regStep === 2 ? (
-        /* ===== STEP 2: Verifikasi Email (OTP) ===== */
+        
+
         <div className="space-y-4">
-          {/* Email info */}
+          {
+}
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
             <div className="flex items-start gap-3">
               <FiMail className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
@@ -531,7 +532,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* Spam warning */}
+          {
+}
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
             <div className="flex items-start gap-2">
               <span className="text-base leading-none mt-0.5">⚠️</span>
@@ -541,7 +543,8 @@ const Login = () => {
             </div>
           </div>
 
-          {/* OTP Input */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Kode Verifikasi</label>
             <div className="flex gap-2">
@@ -559,7 +562,7 @@ const Login = () => {
                       newOtp[i] = val[val.length - 1];
                       setOtpCode(newOtp.join(''));
                       setOtpError('');
-                      // Auto-focus next input
+                      
                       if (i < 5) {
                         const nextInput = e.target.parentElement?.children?.[i + 1];
                         if (nextInput) nextInput.focus();
@@ -590,7 +593,8 @@ const Login = () => {
             {otpVerified && <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1"><FiCheckCircle className="w-3.5 h-3.5" /> Email berhasil diverifikasi</p>}
           </div>
 
-          {/* Actions */}
+          {
+}
           {!otpVerified ? (
             <div className="space-y-3">
               <button
@@ -656,7 +660,8 @@ const Login = () => {
           </button>
         </div>
       ) : (
-        /* ===== STEP 3: Akun Login ===== */
+        
+
         <form onSubmit={handleRegister}>
           <div className="space-y-4">
             <div>
@@ -734,7 +739,7 @@ const Login = () => {
     </motion.div>
   );
 
-  // ========== VIEW: REGISTRATION SUCCESS ==========
+  
   const renderSuccess = () => (
     <motion.div
       key="success"
@@ -774,7 +779,7 @@ const Login = () => {
     </motion.div>
   );
 
-  // ========== VIEW: HUBUNGI ADMIN ==========
+  
   const renderForgot = () => (
     <motion.div
       key="forgot"
@@ -863,7 +868,8 @@ const Login = () => {
 
   return (
     <div className="min-h-screen min-h-[100dvh] flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-[#003B71] via-[#005BAC] to-[#0077D6]">
-      {/* Background Pattern */}
+      {
+}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-96 h-96 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full translate-x-1/3 translate-y-1/3" />

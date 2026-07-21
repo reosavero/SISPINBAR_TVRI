@@ -1,6 +1,4 @@
-// ============================================
-// BARANG PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -34,7 +32,7 @@ const Barang = () => {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
 
-  // Modal states
+  
   const [imgErrors, setImgErrors] = useState({});
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -44,16 +42,16 @@ const Barang = () => {
   const [deleteItem, setDeleteItem] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Foto state
+  
   const [fotoPreview, setFotoPreview] = useState(null);
   const [fotoFile, setFotoFile] = useState(null);
 
-  // Image Crop state
+  
   const [showCropModal, setShowCropModal] = useState(false);
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const fotoInputRef = useRef(null);
 
-  // Form state
+  
   const [form, setForm] = useState({
     kode_barang: '',
     nama_barang: '',
@@ -216,7 +214,7 @@ const Barang = () => {
       toast.error('Nama barang dan kategori wajib diisi');
       return;
     }
-    // Client-side duplicate name check (case-insensitive)
+    
     const duplicateName = barang.find(
       b => b.nama_barang.toLowerCase().trim() === form.nama_barang.toLowerCase().trim() && (!editItem || b.id !== editItem.id)
     );
@@ -233,7 +231,7 @@ const Barang = () => {
       };
       if (editItem) {
         await api.put(`/barang/${editItem.id}`, payload);
-        // Upload foto if changed
+        
         if (fotoFile) {
           const formData = new FormData();
           formData.append('foto', fotoFile);
@@ -244,7 +242,7 @@ const Barang = () => {
         toast.success('Barang berhasil diperbarui');
       } else {
         const res = await api.post('/barang', payload);
-        // Upload foto if provided
+        
         if (fotoFile) {
           const barangId = res.data?.data?.id;
           if (barangId) {
@@ -302,7 +300,8 @@ const Barang = () => {
         <p className="page-subtitle">Kelola data barang inventaris TVRI Jawa Timur</p>
       </div>
 
-      {/* Action Bar */}
+      {
+}
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col sm:flex-row flex-1 gap-2 sm:gap-3 sm:items-center">
@@ -344,7 +343,8 @@ const Barang = () => {
         </div>
       </div>
 
-      {/* Table */}
+      {
+}
       <div className="table-container">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
@@ -408,7 +408,8 @@ const Barang = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden mobile-cards">
           <div className="p-3 space-y-3">
             {barang.length === 0 && !loading ? (
@@ -463,11 +464,13 @@ const Barang = () => {
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalItems} itemsPerPage={itemsPerPage} />
       </div>
 
-      {/* Add/Edit Modal */}
+      {
+}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Barang' : 'Tambah Barang'} size="lg">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Photo Upload */}
+            {
+}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Foto Barang</label>
               <div className="flex items-start gap-4">
@@ -580,7 +583,8 @@ const Barang = () => {
         </form>
       </Modal>
 
-      {/* Detail Modal */}
+      {
+}
       <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title="Detail Barang" size="md">
         {detailItem && (() => {
           const fotoUrl = detailItem.foto ? getBarangFotoUrl(detailItem.foto) : null;
@@ -607,7 +611,8 @@ const Barang = () => {
         })()}
       </Modal>
 
-      {/* Delete Confirm */}
+      {
+}
       <ConfirmDialog
         isOpen={showDelete}
         onClose={() => setShowDelete(false)}
@@ -616,7 +621,8 @@ const Barang = () => {
         message={`Apakah Anda yakin ingin menghapus "${deleteItem?.nama_barang}"? Tindakan ini tidak dapat dibatalkan.`}
       />
 
-      {/* Image Crop Modal */}
+      {
+}
       <ImageCropModal
         isOpen={showCropModal}
         onClose={handleCropCancel}

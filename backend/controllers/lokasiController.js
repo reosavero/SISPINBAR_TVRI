@@ -1,11 +1,9 @@
-// ============================================
-// LOKASI CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const lokasiService = require('../services/lokasiService');
 
 const lokasiController = {
-  // GET /api/lokasi — Get all with search/filter/pagination
+  
   getAll: async (req, res) => {
     try {
       const result = await lokasiService.getAll(req.query);
@@ -15,7 +13,7 @@ const lokasiController = {
     }
   },
 
-  // GET /api/lokasi/active — Get active locations for dropdowns
+  
   getActive: async (req, res) => {
     try {
       const data = await lokasiService.getActive();
@@ -25,7 +23,7 @@ const lokasiController = {
     }
   },
 
-  // GET /api/lokasi/stats — Get location statistics (dashboard)
+  
   getStats: async (req, res) => {
     try {
       const stats = await lokasiService.getStats();
@@ -36,7 +34,7 @@ const lokasiController = {
     }
   },
 
-  // GET /api/lokasi/:id — Get by ID with detail
+  
   getById: async (req, res) => {
     try {
       const result = await lokasiService.getById(req.params.id);
@@ -47,7 +45,7 @@ const lokasiController = {
     }
   },
 
-  // GET /api/lokasi/:id/barang — Get barang by lokasi
+  
   getBarangByLokasi: async (req, res) => {
     try {
       const result = await lokasiService.getBarangByLokasi(req.params.id, req.query);
@@ -57,7 +55,7 @@ const lokasiController = {
     }
   },
 
-  // POST /api/lokasi — Create lokasi
+  
   create: async (req, res) => {
     try {
       const { nama_lokasi } = req.body;
@@ -73,7 +71,7 @@ const lokasiController = {
     }
   },
 
-  // PUT /api/lokasi/:id — Update lokasi
+  
   update: async (req, res) => {
     try {
       const { nama_lokasi } = req.body;
@@ -89,7 +87,7 @@ const lokasiController = {
     }
   },
 
-  // DELETE /api/lokasi/:id — Soft delete
+  
   delete: async (req, res) => {
     try {
       req.user = { ...req.user, ip: req.ip };
@@ -101,7 +99,7 @@ const lokasiController = {
     }
   },
 
-  // PUT /api/lokasi/:id/restore — Restore soft-deleted
+  
   restore: async (req, res) => {
     try {
       req.user = { ...req.user, ip: req.ip };

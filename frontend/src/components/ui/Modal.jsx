@@ -1,7 +1,4 @@
-// ============================================
-// MODAL COMPONENT
-// Mobile-Responsive: Bottom Sheet on Mobile, Centered on Desktop
-// ============================================
+
 
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,7 +31,7 @@ const Modal = ({
     };
   }, [isOpen]);
 
-  // Handle escape key
+  
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape' && isOpen) {
@@ -49,7 +46,8 @@ const Modal = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
-          {/* Backdrop */}
+          {
+}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -58,7 +56,8 @@ const Modal = ({
             onClick={onClose}
           />
 
-          {/* Modal Content - Bottom Sheet on Mobile, Centered on Desktop */}
+          {
+}
           <motion.div
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
@@ -72,12 +71,14 @@ const Modal = ({
               flex flex-col
             `}
           >
-            {/* Drag indicator for mobile */}
+            {
+}
             <div className="sm:hidden flex justify-center pt-2 pb-1 flex-shrink-0">
               <div className="w-10 h-1 bg-gray-300 rounded-full" />
             </div>
 
-            {/* Header */}
+            {
+}
             {title && (
               <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex-shrink-0">
                 <h2 className="text-base sm:text-lg font-bold text-gray-800 line-clamp-1 pr-2">{title}</h2>
@@ -93,7 +94,8 @@ const Modal = ({
               </div>
             )}
 
-            {/* Body - Scrollable */}
+            {
+}
             <div className="px-4 sm:px-6 py-4 overflow-y-auto flex-1 overscroll-contain">
               {children}
             </div>

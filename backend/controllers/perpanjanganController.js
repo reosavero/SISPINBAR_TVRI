@@ -1,11 +1,9 @@
-// ============================================
-// PERPANJANGAN CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const perpanjanganService = require('../services/perpanjanganService');
 
 const perpanjanganController = {
-  // Ajukan perpanjangan (pegawai atau admin)
+  
   create: async (req, res) => {
     try {
       const data = {
@@ -29,11 +27,11 @@ const perpanjanganController = {
     }
   },
 
-  // Ambil daftar perpanjangan
+  
   getAll: async (req, res) => {
     try {
       const params = { ...req.query };
-      // Pegawai hanya melihat perpanjangan miliknya
+      
       if (req.user.role === 'pegawai') {
         params.pegawai_id = req.user.id;
       }
@@ -44,7 +42,7 @@ const perpanjanganController = {
     }
   },
 
-  // Detail perpanjangan
+  
   getById: async (req, res) => {
     try {
       const result = await perpanjanganService.getById(req.params.id);
@@ -55,7 +53,7 @@ const perpanjanganController = {
     }
   },
 
-  // Admin approve perpanjangan
+  
   approve: async (req, res) => {
     try {
       const result = await perpanjanganService.approve(req.params.id, {
@@ -70,7 +68,7 @@ const perpanjanganController = {
     }
   },
 
-  // Admin reject perpanjangan
+  
   reject: async (req, res) => {
     try {
       const result = await perpanjanganService.reject(req.params.id, {

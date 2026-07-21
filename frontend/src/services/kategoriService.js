@@ -1,6 +1,5 @@
-// ============================================
-// KATEGORI SERVICE
-// ============================================
+
+
 import api from './api';
 
 export const kategoriService = {

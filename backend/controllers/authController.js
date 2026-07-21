@@ -1,7 +1,4 @@
-// ============================================
-// AUTH CONTROLLER - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System
-// ============================================
+
 
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -16,9 +13,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'tvri_jatim_secret_key_2024_product
 const JWT_DEFAULT_EXPIRES = process.env.JWT_EXPIRES_IN || '24h';
 
 const generateToken = async (user) => {
-  // Baca session_timeout dari DB secara dinamis
+  
   const timeoutHours = await getSettingInt('session_timeout', 24);
-  const expiresIn = `${Math.min(Math.max(timeoutHours, 1), 168)}h`; // clamp 1-168h
+  const expiresIn = `${Math.min(Math.max(timeoutHours, 1), 168)}h`; 
 
   return jwt.sign(
     { id: user.id, username: user.username, nama: user.nama, role: user.role },
@@ -27,10 +24,8 @@ const generateToken = async (user) => {
   );
 };
 
-// Simpan token reset sementara di memory (production: gunakan tabel DB)
 const resetTokens = new Map();
 
-// Helper: baca setting dari DB dengan fallback
 const getSettingInt = async (key, defaultValue) => {
   try {
     const setting = await settingsService.getByKey(key);
@@ -39,13 +34,13 @@ const getSettingInt = async (key, defaultValue) => {
       if (!isNaN(val) && val > 0) return val;
     }
   } catch (err) {
-    // DB error, fallback
+    
   }
   return defaultValue;
 };
 
 const authController = {
-  // ========== LOGIN (menggunakan username) ==========
+  
   login: async (req, res) => {
     try {
       const { username, password } = req.body;
@@ -57,7 +52,7 @@ const authController = {
         });
       }
 
-      // Cari user berdasarkan username (termasuk cek deleted_at)
+      
       const [users] = await pool.execute(
         'SELECT * FROM users WHERE username = ? AND deleted_at IS NULL',
         [username]
@@ -72,7 +67,7 @@ const authController = {
 
       const user = users[0];
 
-      // Cek apakah akun belum disetujui (registrasi mandiri)
+      
       if (user.registration_status === 'pending') {
         return res.status(403).json({
           success: false,
@@ -87,7 +82,7 @@ const authController = {
         });
       }
 
-      // Cek apakah akun nonaktif
+      
       if (!user.is_active) {
         return res.status(403).json({
           success: false,
@@ -95,7 +90,7 @@ const authController = {
         });
       }
 
-      // Cek apakah akun terkunci karena terlalu banyak percobaan login
+      
       if (user.locked_until && new Date(user.locked_until) > new Date()) {
         const remainingMinutes = Math.ceil((new Date(user.locked_until) - new Date()) / 60000);
         return res.status(423).json({
@@ -104,7 +99,7 @@ const authController = {
         });
       }
 
-      // Jika lock period sudah lewat, reset counter
+      
       if (user.locked_until && new Date(user.locked_until) <= new Date()) {
         await pool.execute(
           'UPDATE users SET login_attempts = 0, locked_until = NULL WHERE id = ?',
@@ -116,12 +111,12 @@ const authController = {
       const isMatch = await bcrypt.compare(password, user.password);
       
       if (!isMatch) {
-        // Ambil max_login_attempts dari settings
+        
         const maxAttempts = await getSettingInt('max_login_attempts', 5);
         const newAttempts = (user.login_attempts || 0) + 1;
 
         if (newAttempts >= maxAttempts) {
-          // Kunci akun selama 30 menit
+          
           const lockedUntil = new Date(Date.now() + 30 * 60 * 1000);
           await pool.execute(
             'UPDATE users SET login_attempts = ?, locked_until = ? WHERE id = ?',
@@ -133,7 +128,7 @@ const authController = {
           });
         }
 
-        // Tambah counter percobaan gagal
+        
         await pool.execute(
           'UPDATE users SET login_attempts = ? WHERE id = ?',
           [newAttempts, user.id]
@@ -146,7 +141,7 @@ const authController = {
         });
       }
 
-      // Login berhasil — reset login attempts
+      
       await pool.execute(
         'UPDATE users SET login_attempts = 0, locked_until = NULL WHERE id = ?',
         [user.id]
@@ -154,7 +149,7 @@ const authController = {
 
       const token = await generateToken(user);
 
-      // Audit log for login
+      
       await auditService.log({
         userId: user.id,
         username: user.username,
@@ -188,7 +183,7 @@ const authController = {
     }
   },
 
-  // ========== PROFILE ==========
+  
   profile: async (req, res) => {
     try {
       const [users] = await pool.execute(
@@ -216,7 +211,7 @@ const authController = {
         });
       }
 
-      // Fallback
+      
       res.json({
         success: true,
         data: req.user,
@@ -226,7 +221,7 @@ const authController = {
     }
   },
 
-  // ========== UPDATE PROFILE ==========
+  
   updateProfile: async (req, res) => {
     try {
       const userId = req.user.id;
@@ -237,7 +232,7 @@ const authController = {
         [nama || req.user.nama, email || null, userId]
       );
 
-      // Fetch updated user
+      
       const [users] = await pool.execute(
         'SELECT id, username, email, nama, role, nip, jabatan, divisi, nomor_hp, avatar, is_active FROM users WHERE id = ?',
         [userId]
@@ -265,7 +260,7 @@ const authController = {
     }
   },
 
-  // ========== UPLOAD AVATAR ==========
+  
   uploadAvatar: async (req, res) => {
     try {
       if (!req.file) {
@@ -278,11 +273,11 @@ const authController = {
       const userId = req.user.id;
       const avatarPath = `/uploads/avatars/${req.file.filename}`;
 
-      // Get old avatar to delete
+      
       const [users] = await pool.execute('SELECT avatar FROM users WHERE id = ?', [userId]);
       const oldAvatar = users.length > 0 ? users[0].avatar : null;
 
-      // Delete old avatar file if exists
+      
       if (oldAvatar && oldAvatar.startsWith('/uploads/avatars/')) {
         const oldPath = path.join(__dirname, '..', oldAvatar);
         if (fs.existsSync(oldPath)) {
@@ -290,10 +285,10 @@ const authController = {
         }
       }
 
-      // Update avatar in database
+      
       await pool.execute('UPDATE users SET avatar = ?, updated_at = NOW() WHERE id = ?', [avatarPath, userId]);
 
-      // Fetch updated user
+      
       const [updatedUsers] = await pool.execute('SELECT id, username, email, nama, role, nip, jabatan, divisi, nomor_hp, avatar, is_active FROM users WHERE id = ?', [userId]);
       const updatedUser = updatedUsers[0];
 
@@ -314,7 +309,7 @@ const authController = {
         },
       });
     } catch (error) {
-      // Delete uploaded file if DB update fails
+      
       if (req.file) {
         const filePath = req.file.path;
         if (fs.existsSync(filePath)) {
@@ -325,7 +320,7 @@ const authController = {
     }
   },
 
-  // ========== LUPA PASSWORD ==========
+  
   forgotPassword: async (req, res) => {
     try {
       const { email } = req.body;
@@ -337,10 +332,10 @@ const authController = {
         });
       }
 
-      // Cek apakah user ada di database
+      
       const [users] = await pool.execute('SELECT * FROM users WHERE email = ? AND is_active = 1 AND deleted_at IS NULL', [email]);
 
-      // Selalu return sukses untuk keamanan (tidak bocor info)
+      
       if (users.length === 0) {
         return res.json({
           success: true,
@@ -348,10 +343,10 @@ const authController = {
         });
       }
 
-      // Generate reset token
+      
       const resetToken = crypto.randomBytes(32).toString('hex');
 
-      // Simpan token di memory (valid 1 jam)
+      
       resetTokens.set(resetToken, {
         userId: users[0].id,
         email: users[0].email,
@@ -370,7 +365,7 @@ const authController = {
     }
   },
 
-  // ========== RESET PASSWORD ==========
+  
   resetPassword: async (req, res) => {
     try {
       const { token, newPassword } = req.body;
@@ -389,7 +384,7 @@ const authController = {
         });
       }
 
-      // Cek token di memory
+      
       const storedData = resetTokens.get(token);
 
       if (!storedData) {
@@ -399,7 +394,7 @@ const authController = {
         });
       }
 
-      // Cek apakah token expired
+      
       if (Date.now() > storedData.expiresAt) {
         resetTokens.delete(token);
         return res.status(400).json({
@@ -408,16 +403,16 @@ const authController = {
         });
       }
 
-      // Hash password baru
+      
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Update password di database
+      
       await pool.execute(
         'UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?',
         [hashedPassword, storedData.userId]
       );
 
-      // Hapus token yang sudah digunakan
+      
       resetTokens.delete(token);
 
       res.json({
@@ -429,7 +424,7 @@ const authController = {
     }
   },
 
-  // ========== CHANGE PASSWORD (user yang sudah login) ==========
+  
   changePassword: async (req, res) => {
     try {
       const { currentPassword, newPassword } = req.body;
@@ -450,7 +445,7 @@ const authController = {
 
       const userId = req.user.id;
 
-      // Ambil data user dari database
+      
       const [users] = await pool.execute('SELECT * FROM users WHERE id = ?', [userId]);
 
       if (users.length === 0) {
@@ -470,11 +465,11 @@ const authController = {
         });
       }
 
-      // Hash dan update password baru
+      
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       await pool.execute('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?', [hashedPassword, userId]);
 
-      // Audit log
+      
       await auditService.log({
         userId: user.id,
         username: user.username,
@@ -492,31 +487,31 @@ const authController = {
     }
   },
 
-  // ========== REGISTER (Self-registration for Pegawai) ==========
+  
   register: async (req, res) => {
     try {
       const { nama, nip, email, nomor_hp, jabatan, divisi, username, password } = req.body;
 
-      // Validasi wajib
+      
       if (!nama || !nip || !username || !password) {
         return res.status(400).json({ success: false, message: 'Nama, NIP, username, dan password wajib diisi' });
       }
       if (!email) {
         return res.status(400).json({ success: false, message: 'Email wajib diisi untuk notifikasi persetujuan akun' });
       }
-      // Validasi format email
+      
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return res.status(400).json({ success: false, message: 'Format email tidak valid' });
       }
-      // Verifikasi domain email (MX record)
+      
       const { verifyEmail } = require('../services/emailVerifyService');
       const emailCheck = await verifyEmail(email.trim());
       if (!emailCheck.valid) {
         return res.status(400).json({ success: false, message: emailCheck.reason });
       }
 
-      // Verifikasi email OTP sudah dikonfirmasi
+      
       const emailVerificationService = require('../services/emailVerificationService');
       const isVerified = await emailVerificationService.isEmailVerified(email.trim());
       if (!isVerified) {
@@ -529,35 +524,35 @@ const authController = {
         return res.status(400).json({ success: false, message: 'Username minimal 3 karakter' });
       }
 
-      // Cek duplikat username
+      
       const [existingUsername] = await pool.execute('SELECT id FROM users WHERE username = ?', [username]);
       if (existingUsername.length > 0) {
         return res.status(409).json({ success: false, message: 'Username sudah digunakan. Silakan pilih username lain.' });
       }
 
-      // Cek duplikat NIP
+      
       const [existingNip] = await pool.execute('SELECT id FROM users WHERE nip = ?', [nip]);
       if (existingNip.length > 0) {
         return res.status(409).json({ success: false, message: 'NIP sudah terdaftar. Silakan hubungi admin jika ini adalah kesalahan.' });
       }
 
-      // Cek duplikat email
+      
       const [existingEmail] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
       if (existingEmail.length > 0) {
         return res.status(409).json({ success: false, message: 'Email sudah terdaftar. Silakan gunakan email lain.' });
       }
 
-      // Hash password
+      
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Buat akun pegawai (single table)
+      
       const [userResult] = await pool.execute(
         'INSERT INTO users (username, email, password, nama, role, nip, jabatan, divisi, nomor_hp, is_active, registration_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [username, email || null, hashedPassword, nama, 'pegawai', nip, jabatan || null, divisi || null, nomor_hp || null, 0, 'pending']
       );
       const userId = userResult.insertId;
 
-      // Audit log
+      
       await auditService.log({
         userId,
         username,

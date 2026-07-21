@@ -1,6 +1,4 @@
-// ============================================
-// ERROR HANDLER MIDDLEWARE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const errorHandler = (err, req, res, next) => {
   console.error('Error:', err.message);

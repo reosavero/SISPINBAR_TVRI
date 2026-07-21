@@ -1,7 +1,4 @@
-// ============================================
-// RIWAYAT ROUTES - Sistem Peminjaman Barang TVRI
-// Updated: Added delete endpoints for super_admin
-// ============================================
+
 
 const express = require('express');
 const router = express.Router();
@@ -10,14 +7,12 @@ const pool = require('../config/db');
 const { paginate } = require('../utils/helpers');
 const riwayatController = require('../controllers/riwayatController');
 
-// Semua route memerlukan autentikasi
 router.use(auth);
 
-// Get all riwayat with filters
 router.get('/', async (req, res) => {
   try {
     const { search, bulan, tahun, status, page = 1, limit } = req.query;
-    // Default limit per halaman
+    
     const defaultLimit = (req.user.role === 'admin' || req.user.role === 'super_admin') ? 10 : 5;
     const itemsPerPage = Math.min(Math.max(parseInt(limit) || defaultLimit, 1), 50);
     const offset = (parseInt(page) - 1) * itemsPerPage;
@@ -25,13 +20,13 @@ router.get('/', async (req, res) => {
     let whereConditions = [];
     let params = [];
 
-    // Pegawai hanya bisa melihat riwayat miliknya sendiri
+    
     if (req.user.role === 'pegawai' && req.user.id) {
       whereConditions.push('p.pegawai_id = ?');
       params.push(req.user.id);
     }
 
-    // Default: tampilkan hanya data bulan berjalan (yang belum diarsipkan)
+    
     if (!req.query.showAll) {
       whereConditions.push('p.archived_at IS NULL');
     }
@@ -94,7 +89,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Delete a single riwayat record (super_admin only)
 router.delete('/:id', superAdminOnly, riwayatController.deleteRecord);
 
 module.exports = router;

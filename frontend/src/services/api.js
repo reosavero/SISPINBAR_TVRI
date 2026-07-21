@@ -1,6 +1,4 @@
-// ============================================
-// API SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import axios from 'axios';
 
@@ -14,7 +12,6 @@ const api = axios.create({
   },
 });
 
-// Request interceptor - attach token dari sessionStorage
 api.interceptors.request.use(
   (config) => {
     const token = sessionStorage.getItem('token');
@@ -26,17 +23,16 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle errors
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.code === 'ERR_CANCELED' || error.code === 'ECONNABORTED' || error.name === 'CanceledError') {
-      // Request dibatalkan secara sengaja (AbortController) — bukan error
+      
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401) {
-      // Hanya dispatch event jika memang sedang logged-in (bukan saat proses logout)
+      
       const isLoggingOut = !sessionStorage.getItem('token');
       if (!isLoggingOut) {
         sessionStorage.removeItem('token');

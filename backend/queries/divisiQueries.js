@@ -1,6 +1,4 @@
-// ============================================
-// DIVISI QUERIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const divisiQueries = {
   getAll: `

@@ -1,6 +1,4 @@
-// ============================================
-// DASHBOARD PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -30,8 +28,8 @@ const Dashboard = () => {
   const { isAdmin, isSuperAdmin, isPegawai } = useAuth();
   const navigate = useNavigate();
 
-  // Dashboard admin/super_admin menampilkan statistik keseluruhan
-  const showAdminDashboard = isAdmin; // admin atau super_admin
+  
+  const showAdminDashboard = isAdmin; 
 
   const [stats, setStats] = useState(null);
   const [monthlyLoans, setMonthlyLoans] = useState([]);
@@ -44,23 +42,23 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activityLoading, setActivityLoading] = useState(false);
 
-  // AbortController ref untuk membatalkan request saat unmount/logout
+  
   const abortControllerRef = useRef(null);
   const isMountedRef = useRef(true);
 
-  // Helper: aman update state hanya jika component masih mounted
+  
   const safeSetState = useCallback((setter) => (value) => {
     if (isMountedRef.current) setter(value);
   }, []);
 
-  // Cleanup pada unmount
+  
   useEffect(() => {
     isMountedRef.current = true;
     abortControllerRef.current = new AbortController();
 
     return () => {
       isMountedRef.current = false;
-      // Batalkan semua request yang sedang berjalan
+      
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
@@ -80,7 +78,7 @@ const Dashboard = () => {
   }, [selectedYear]);
 
   const fetchDashboardData = async () => {
-    // Cek token sebelum fetch — jangan fetch jika sudah logout
+    
     if (!sessionStorage.getItem('token')) return;
     try {
       const signal = abortControllerRef.current?.signal;
@@ -103,7 +101,7 @@ const Dashboard = () => {
         setSelectedYear(years[0]);
       }
     } catch (err) {
-      // Aborted request saat unmount — biarkan, jangan log error
+      
       if (err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return;
       if (!isMountedRef.current) return;
       console.error('Dashboard fetch error:', err);
@@ -120,7 +118,7 @@ const Dashboard = () => {
       setMonthlyLoans(res.data.data);
     } catch (err) {
       if (err.code === 'ERR_CANCELED' || err.code === 'ECONNABORTED' || err.name === 'CanceledError') return;
-      // keep existing data
+      
     }
   };
 
@@ -185,7 +183,6 @@ const Dashboard = () => {
     };
   }, [monthlyLoans]);
 
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -199,13 +196,15 @@ const Dashboard = () => {
 
   return (
     <div className="page-container">
-      {/* Header */}
+      {
+}
       <div className="mb-4 sm:mb-6">
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">Selamat datang di Sistem Peminjaman Barang TVRI Jawa Timur</p>
       </div>
 
-      {/* Stats Cards */}
+      {
+}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         <StatCard title="Total Barang" value={stats?.totalBarang || 0} icon={MdInventory2} color="primary" onClick={() => navigate('/barang')} />
         <StatCard title="Barang Tersedia" value={stats?.barangTersedia || 0} icon={MdInventory2} color="success" onClick={() => navigate('/barang?status=Tersedia')} />
@@ -220,9 +219,11 @@ const Dashboard = () => {
         <StatCard title="Pengembalian Hari Ini" value={stats?.pengembalianHariIni || 0} icon={MdAssignmentTurnedIn} color="success" onClick={() => navigate('/pengembalian')} />
       </div>
 
-      {/* Charts Row */}
+      {
+}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-4 sm:mb-6">
-        {/* Line Chart - Monthly Loans */}
+        {
+}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -345,7 +346,8 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        {/* Pie Chart - Barang Status */}
+        {
+}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -395,7 +397,8 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Activity Timeline */}
+      {
+}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -448,7 +451,6 @@ const Dashboard = () => {
             </div>
           )}
         </div>
-
 
       </motion.div>
     </div>

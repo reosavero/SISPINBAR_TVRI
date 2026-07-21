@@ -1,6 +1,4 @@
-// ============================================
-// PEMINJAMAN CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const peminjamanService = require('../services/peminjamanService');
 
@@ -9,7 +7,7 @@ const peminjamanController = {
     try {
       const params = { ...req.query };
 
-      // Pegawai hanya bisa melihat peminjaman miliknya sendiri
+      
       if (req.user.role === 'pegawai') {
         params.pegawai_id = req.user.id;
       }
@@ -26,7 +24,7 @@ const peminjamanController = {
       const result = await peminjamanService.getById(req.params.id);
       if (!result) return res.status(404).json({ success: false, message: 'Peminjaman tidak ditemukan' });
 
-      // Pegawai hanya bisa melihat detail peminjaman miliknya
+      
       if (req.user.role === 'pegawai' && result.pegawai_id !== req.user.id) {
         return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk melihat peminjaman ini' });
       }
@@ -49,7 +47,7 @@ const peminjamanController = {
         foto: req.file ? `/uploads/peminjaman/${req.file.filename}` : null,
       };
 
-      // Pegawai auto-assign pegawai_id from logged-in user
+      
       if (req.user.role === 'pegawai') {
         data.pegawai_id = req.user.id;
       }
@@ -88,7 +86,7 @@ const peminjamanController = {
     }
   },
 
-  // Bulk approve/reject (admin only)
+  
   bulkAction: async (req, res) => {
     try {
       const { ids, action } = req.body;
@@ -127,7 +125,7 @@ const peminjamanController = {
     }
   },
 
-  // Pegawai can update their own peminjaman if still Menunggu Persetujuan
+  
   updateByPegawai: async (req, res) => {
     try {
       const pegawaiId = req.user.id;
@@ -151,7 +149,7 @@ const peminjamanController = {
     }
   },
 
-  // Pegawai can delete their own peminjaman if still Menunggu Persetujuan
+  
   deleteByPegawai: async (req, res) => {
     try {
       const pegawaiId = req.user.id;

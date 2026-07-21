@@ -1,6 +1,4 @@
-// ============================================
-// LOKASI SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const lokasiQueries = require('../queries/lokasiQueries');
@@ -8,7 +6,7 @@ const { paginate } = require('../utils/helpers');
 const auditService = require('./auditService');
 
 const lokasiService = {
-  // Get all locations with search, filter, pagination
+  
   getAll: async (params = {}) => {
     const page = parseInt(params.page) || 1;
     const limit = parseInt(params.limit) || 10;
@@ -33,7 +31,7 @@ const lokasiService = {
     const totalItems = countResult[0].total;
     const totalPages = Math.ceil(totalItems / limit);
 
-    // Parse DECIMAL fields
+    
     return {
       data: rows.map(row => ({
         ...row,
@@ -46,7 +44,7 @@ const lokasiService = {
     };
   },
 
-  // Get by ID
+  
   getById: async (id) => {
     const [rows] = await pool.execute(lokasiQueries.getById, [id]);
     if (rows.length === 0) return null;
@@ -60,7 +58,7 @@ const lokasiService = {
     };
   },
 
-  // Get active locations for dropdowns
+  
   getActive: async () => {
     const [rows] = await pool.execute(lokasiQueries.getActive);
     return rows.map(row => ({
@@ -69,7 +67,7 @@ const lokasiService = {
     }));
   },
 
-  // Get barang by lokasi
+  
   getBarangByLokasi: async (lokasiId, params = {}) => {
     const page = parseInt(params.page) || 1;
     const limit = parseInt(params.limit) || 20;
@@ -87,7 +85,7 @@ const lokasiService = {
     };
   },
 
-  // Generate next kode_lokasi
+  
   generateKode: async () => {
     const [rows] = await pool.execute(lokasiQueries.getNextKode);
     const maxKode = rows[0].max_kode || 0;
@@ -95,11 +93,11 @@ const lokasiService = {
     return `LOC-${String(nextNum).padStart(3, '0')}`;
   },
 
-  // Create lokasi
+  
   create: async (data, user) => {
     const { nama_lokasi, gedung, lantai, ruangan, deskripsi, status } = data;
 
-    // Validate: no duplicate nama_lokasi
+    
     const [namaDuplicate] = await pool.execute(lokasiQueries.checkNamaLokasi, [nama_lokasi.trim(), 0]);
     if (namaDuplicate.length > 0) {
       const err = new Error('Nama lokasi sudah digunakan. Silakan gunakan nama lokasi lain.');
@@ -107,7 +105,7 @@ const lokasiService = {
       throw err;
     }
 
-    // Validate: no duplicate gedung + lantai + ruangan
+    
     const [duplicate] = await pool.execute(lokasiQueries.checkDuplicate, [
       gedung || '', lantai || '', ruangan || '', 0,
     ]);
@@ -125,7 +123,7 @@ const lokasiService = {
       user?.id || null, user?.id || null,
     ]);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -139,11 +137,11 @@ const lokasiService = {
     return { id: result.insertId, kode_lokasi, ...data };
   },
 
-  // Update lokasi
+  
   update: async (id, data, user) => {
     const { nama_lokasi, gedung, lantai, ruangan, deskripsi, status } = data;
 
-    // Validate: no duplicate nama_lokasi (exclude self)
+    
     const [namaDuplicate] = await pool.execute(lokasiQueries.checkNamaLokasi, [nama_lokasi.trim(), id]);
     if (namaDuplicate.length > 0) {
       const err = new Error('Nama lokasi sudah digunakan. Silakan gunakan nama lokasi lain.');
@@ -151,7 +149,7 @@ const lokasiService = {
       throw err;
     }
 
-    // Validate: no duplicate gedung + lantai + ruangan (exclude self)
+    
     const [duplicate] = await pool.execute(lokasiQueries.checkDuplicate, [
       gedung || '', lantai || '', ruangan || '', id,
     ]);
@@ -167,7 +165,7 @@ const lokasiService = {
       user?.id || null, id,
     ]);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -181,9 +179,9 @@ const lokasiService = {
     return { id, ...data };
   },
 
-  // Soft delete lokasi
+  
   delete: async (id, user) => {
-    // Check if lokasi has active barang
+    
     const [countResult] = await pool.execute(lokasiQueries.countActiveBarang, [id]);
     const totalBarang = countResult[0].total;
 
@@ -195,7 +193,7 @@ const lokasiService = {
 
     await pool.execute(lokasiQueries.softDelete, [user?.id || null, id]);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -209,11 +207,11 @@ const lokasiService = {
     return { id };
   },
 
-  // Restore soft-deleted lokasi
+  
   restore: async (id, user) => {
     await pool.execute(lokasiQueries.restore, [user?.id || null, id]);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -227,13 +225,13 @@ const lokasiService = {
     return { id };
   },
 
-  // Dashboard stats
+  
   getStats: async () => {
     const [rows] = await pool.execute(lokasiQueries.getStats);
     return rows[0];
   },
 
-  // Top lokasi (most barang)
+  
   getTopLokasi: async (limit = 5) => {
     const [rows] = await pool.execute(lokasiQueries.getTopLokasi, [limit]);
     return rows.map(row => ({

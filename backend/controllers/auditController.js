@@ -1,12 +1,10 @@
-// ============================================
-// AUDIT CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const auditService = require('../services/auditService');
 const auditCleanupService = require('../services/auditCleanupService');
 
 const auditController = {
-  // Ambil audit log (super_admin only)
+  
   getAll: async (req, res) => {
     try {
       const result = await auditService.getAll(req.query);
@@ -16,7 +14,7 @@ const auditController = {
     }
   },
 
-  // Ambil statistik audit (super_admin only)
+  
   getStats: async (req, res) => {
     try {
       const result = await auditService.getStats();
@@ -26,7 +24,7 @@ const auditController = {
     }
   },
 
-  // Get retention info (super_admin only)
+  
   getRetentionInfo: async (req, res) => {
     try {
       const result = await auditCleanupService.getRetentionInfo();
@@ -36,7 +34,7 @@ const auditController = {
     }
   },
 
-  // Manual cleanup (super_admin only)
+  
   cleanup: async (req, res) => {
     try {
       const result = await auditCleanupService.cleanupOldLogs({

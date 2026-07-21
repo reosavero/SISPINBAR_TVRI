@@ -1,6 +1,5 @@
-// ============================================
-// PEMINJAMAN SERVICE
-// ============================================
+
+
 import api from './api';
 
 export const peminjamanService = {

@@ -1,12 +1,9 @@
-// ============================================
-// AUDIT SERVICE - Sistem Peminjaman Barang TVRI
-// Mencatat setiap aktivitas user
-// ============================================
+
 
 const pool = require('../config/db');
 
 const auditService = {
-  // Catat aktivitas ke audit_log
+  
   log: async ({ userId, username, action, module, recordId, details, ipAddress }) => {
     try {
       await pool.execute(
@@ -22,12 +19,12 @@ const auditService = {
         ]
       );
     } catch (error) {
-      // Audit log failure should not break the main operation
+      
       console.error('Audit log error:', error.message);
     }
   },
 
-  // Ambil audit log dengan filter
+  
   getAll: async (params = {}) => {
     const page = parseInt(params.page) || 1;
     const limit = parseInt(params.limit) || 20;
@@ -82,12 +79,12 @@ const auditService = {
     };
   },
 
-  // Ambil audit log untuk user tertentu
+  
   getByUser: async (userId, params = {}) => {
     return auditService.getAll({ ...params, userId });
   },
 
-  // Ambil aktivitas terbaru
+  
   getRecent: async (limit = 10) => {
     const [rows] = await pool.execute(
       `SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?`,
@@ -96,7 +93,7 @@ const auditService = {
     return rows;
   },
 
-  // Ambil statistik audit
+  
   getStats: async () => {
     const [todayActions] = await pool.execute(
       `SELECT COUNT(*) AS total FROM audit_log WHERE DATE(created_at) = CURDATE()`

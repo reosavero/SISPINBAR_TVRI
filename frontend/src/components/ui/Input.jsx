@@ -1,6 +1,4 @@
-// ============================================
-// INPUT COMPONENT
-// ============================================
+
 
 import { useState } from 'react';
 import { FiEye, FiEyeOff } from 'react-icons/fi';

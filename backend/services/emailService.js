@@ -1,13 +1,7 @@
-// ============================================
-// EMAIL SERVICE - Sistem Peminjaman Barang TVRI
-// Email notifications for registration approval/rejection
-// ============================================
+
 
 const nodemailer = require('nodemailer');
 const pool = require('../config/db');
-
-// ========== EMAIL CONFIGURATION ==========
-// Reads SMTP settings from system_settings DB, falls back to .env
 
 const getDefaultTransporter = () => {
   return nodemailer.createTransport({
@@ -29,7 +23,6 @@ const getAppName = () => {
   return process.env.APP_NAME || 'SISPINBAR - TVRI Jawa Timur';
 };
 
-// ========== HELPER: Get SMTP config from DB ==========
 const getSmtpConfig = async () => {
   try {
     const [rows] = await pool.execute(
@@ -45,7 +38,6 @@ const getSmtpConfig = async () => {
   }
 };
 
-// ========== HELPER: Build transporter from DB config ==========
 const buildTransporter = async () => {
   const dbConfig = await getSmtpConfig();
 
@@ -67,7 +59,6 @@ const buildTransporter = async () => {
   });
 };
 
-// ========== SEND EMAIL ==========
 const sendEmail = async ({ to, subject, html }) => {
   try {
     const transporter = await buildTransporter();
@@ -95,7 +86,6 @@ const sendEmail = async ({ to, subject, html }) => {
   }
 };
 
-// ========== REGISTRATION APPROVED EMAIL ==========
 const sendApprovalEmail = async (userEmail, userName, username) => {
   const appName = getAppName();
   const subject = `${appName} - Registrasi Disetujui`;
@@ -152,7 +142,6 @@ const sendApprovalEmail = async (userEmail, userName, username) => {
   return sendEmail({ to: userEmail, subject, html });
 };
 
-// ========== REGISTRATION REJECTED EMAIL ==========
 const sendRejectionEmail = async (userEmail, userName, reason) => {
   const appName = getAppName();
   const subject = `${appName} - Registrasi Ditolak`;

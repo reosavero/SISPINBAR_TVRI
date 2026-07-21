@@ -1,7 +1,4 @@
-// ============================================
-// BARANG QUERIES - Sistem Peminjaman Barang TVRI
-// (Updated: soft delete support)
-// ============================================
+
 
 const barangQueries = {
   getAll: `

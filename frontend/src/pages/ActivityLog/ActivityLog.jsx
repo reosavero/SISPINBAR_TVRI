@@ -1,7 +1,4 @@
-// ============================================
-// ACTIVITY LOG PAGE - Sistem Peminjaman Barang TVRI
-// Super Admin Only: View Audit Trail + Cleanup
-// ============================================
+
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -56,7 +53,7 @@ const ActivityLog = () => {
         setRetentionInfo(res.data.data);
       }
     } catch (err) {
-      // silently fail
+      
     }
   };
 
@@ -129,7 +126,8 @@ const ActivityLog = () => {
 
   return (
     <div className="page-container">
-      {/* Header */}
+      {
+}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <h1 className="page-title">Activity Log</h1>
@@ -137,7 +135,8 @@ const ActivityLog = () => {
         </div>
       </div>
 
-      {/* Retention Info Banner */}
+      {
+}
       {isSuperAdmin && retentionInfo && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -164,7 +163,8 @@ const ActivityLog = () => {
         </motion.div>
       )}
 
-      {/* Filters */}
+      {
+}
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
@@ -196,7 +196,8 @@ const ActivityLog = () => {
         </div>
       </div>
 
-      {/* Activity List */}
+      {
+}
       <div className="bg-white rounded-2xl shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-12">
@@ -254,7 +255,8 @@ const ActivityLog = () => {
           </div>
         )}
 
-        {/* Pagination */}
+        {
+}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
             <p className="text-xs text-gray-400">

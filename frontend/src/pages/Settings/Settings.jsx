@@ -1,7 +1,4 @@
-// ============================================
-// SETTINGS PAGE - Sistem Peminjaman Barang TVRI
-// Super Admin Only: System Settings
-// ============================================
+
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -43,7 +40,7 @@ const Settings = () => {
         setAppInfo(res.data.data);
       }
     } catch (err) {
-      // silently fail
+      
     }
     setLoading(false);
   };
@@ -77,13 +74,15 @@ const Settings = () => {
 
   return (
     <div className="page-container">
-      {/* Header */}
+      {
+}
       <div className="mb-4 sm:mb-6">
         <h1 className="page-title">System Settings</h1>
         <p className="page-subtitle">Konfigurasi dan informasi sistem</p>
       </div>
 
-      {/* App Info Card */}
+      {
+}
       {appInfo && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -136,7 +135,8 @@ const Settings = () => {
         </motion.div>
       )}
 
-      {/* Settings Form */}
+      {
+}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,7 +154,8 @@ const Settings = () => {
         </div>
 
         <div className="space-y-6">
-          {/* App Name */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Aplikasi</label>
             <input
@@ -166,7 +167,8 @@ const Settings = () => {
             />
           </div>
 
-          {/* App Full Name */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Lengkap Aplikasi</label>
             <input
@@ -178,7 +180,8 @@ const Settings = () => {
             />
           </div>
 
-          {/* Organization */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Nama Organisasi</label>
             <input
@@ -190,7 +193,8 @@ const Settings = () => {
             />
           </div>
 
-          {/* Session Timeout */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <div className="flex items-center gap-1.5">
@@ -210,7 +214,8 @@ const Settings = () => {
             <p className="text-xs text-gray-400 mt-1">Durasi token JWT tetap aktif setelah login. Rentang 1–168 jam (1 jam s/d 7 hari). Berlaku untuk login baru.</p>
           </div>
 
-          {/* Max Login Attempts */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">Maksimal Percobaan Login</label>
             <input
@@ -225,7 +230,8 @@ const Settings = () => {
             <p className="text-xs text-gray-400 mt-1">Jika melebihi batas, akun akan terkunci selama 30 menit.</p>
           </div>
 
-          {/* Audit Log Retention */}
+          {
+}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               <div className="flex items-center gap-1.5">
@@ -246,7 +252,8 @@ const Settings = () => {
           </div>
         </div>
 
-        {/* Save Button */}
+        {
+}
         <div className="flex justify-end mt-6 pt-4 border-t border-gray-100">
           <Button icon={FiSave} onClick={handleSave} loading={saving}>
             Simpan Pengaturan
@@ -254,7 +261,8 @@ const Settings = () => {
         </div>
       </motion.div>
 
-      {/* Warning */}
+      {
+}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

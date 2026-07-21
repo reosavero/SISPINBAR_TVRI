@@ -1,25 +1,22 @@
-// ============================================
-// SETTINGS SERVICE - Sistem Peminjaman Barang TVRI
-// System Settings (Super Admin only)
-// ============================================
+
 
 const pool = require('../config/db');
 const auditService = require('./auditService');
 
 const settingsService = {
-  // ========== GET ALL SETTINGS ==========
+  
   getAll: async () => {
     const [rows] = await pool.execute('SELECT * FROM system_settings ORDER BY id ASC');
     return rows;
   },
 
-  // ========== GET SETTING BY KEY ==========
+  
   getByKey: async (key) => {
     const [rows] = await pool.execute('SELECT * FROM system_settings WHERE setting_key = ?', [key]);
     return rows[0] || null;
   },
 
-  // ========== UPDATE SETTING ==========
+  
   update: async (key, value, updatedBy) => {
     const [existing] = await pool.execute('SELECT * FROM system_settings WHERE setting_key = ?', [key]);
     if (existing.length === 0) {
@@ -31,7 +28,7 @@ const settingsService = {
       [value, updatedBy?.id || null, key]
     );
 
-    // Audit log
+    
     await auditService.log({
       userId: updatedBy?.id,
       username: updatedBy?.username,
@@ -45,7 +42,7 @@ const settingsService = {
     return updated[0];
   },
 
-  // ========== UPDATE MULTIPLE SETTINGS ==========
+  
   updateMultiple: async (settings, updatedBy) => {
     const results = [];
     for (const { key, value } of settings) {
@@ -59,7 +56,7 @@ const settingsService = {
     return results;
   },
 
-  // ========== GET APP INFO ==========
+  
   getAppInfo: async () => {
     const settings = await settingsService.getAll();
     const settingsMap = {};
@@ -67,7 +64,7 @@ const settingsService = {
       settingsMap[s.setting_key] = s.setting_value;
     });
 
-    // Get database stats
+    
     const [dbStats] = await pool.execute(`
       SELECT
         (SELECT COUNT(*) FROM users WHERE deleted_at IS NULL) AS total_users,

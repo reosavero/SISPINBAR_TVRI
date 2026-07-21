@@ -1,6 +1,4 @@
-// ============================================
-// JABATAN CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const jabatanService = require('../services/jabatanService');
 

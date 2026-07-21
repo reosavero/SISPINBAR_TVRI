@@ -1,9 +1,4 @@
-// ============================================
-// PEMINJAMAN PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
-// Pegawai: Pilih kategori → Lihat barang → Ajukan pinjam
-// Admin: Tabel penuh dengan approve/reject
-// ============================================
+
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -31,7 +26,6 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
-// Icon mapping untuk kategori
 const getCategoryIcon = (nama) => {
   const lower = (nama || '').toLowerCase();
   if (lower.includes('kamera') || lower.includes('camera')) return MdCameraAlt;
@@ -73,7 +67,7 @@ const categoryTextColors = [
 const Peminjaman = () => {
   const { user, isAdmin } = useAuth();
 
-  // ============ SHARED STATE ============
+  
   const [peminjaman, setPeminjaman] = useState([]);
   const [loading, setLoading] = useState(true);
   const [imgErrors, setImgErrors] = useState({});
@@ -83,14 +77,14 @@ const Peminjaman = () => {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
 
-  // Detail & action modals
+  
   const [showDetail, setShowDetail] = useState(false);
   const [showApprove, setShowApprove] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [detailItem, setDetailItem] = useState(null);
   const [actionItem, setActionItem] = useState(null);
 
-  // ============ PEGAWAI: KATEGORI VIEW ============
+  
   const [categories, setCategories] = useState([]);
   const [selectedKategori, setSelectedKategori] = useState(null);
   const [barangKategori, setBarangKategori] = useState([]);
@@ -105,13 +99,11 @@ const Peminjaman = () => {
     jumlah: 1,
   });
 
-  // Pegawai pinjam foto state
+  
   const [pinjamFotoPreview, setPinjamFotoPreview] = useState(null);
   const [pinjamFotoFile, setPinjamFotoFile] = useState(null);
 
-
-
-  // ============ ADMIN: MODAL STATE ============
+  
   const [pegawaiList, setPegawaiList] = useState([]);
   const [availableBarang, setAvailableBarang] = useState([]);
   const [showAdminModal, setShowAdminModal] = useState(false);
@@ -121,12 +113,11 @@ const Peminjaman = () => {
     tanggal_pinjam: '', tanggal_kembali_rencana: '', keperluan: '',
   });
 
-  // Admin pinjam foto state
+  
   const [adminFotoPreview, setAdminFotoPreview] = useState(null);
   const [adminFotoFile, setAdminFotoFile] = useState(null);
 
-
-  // ============ FETCH DATA ============
+  
   useEffect(() => { if (isAdmin) fetchPeminjaman(); }, [currentPage, search]);
   useEffect(() => {
     if (isAdmin) {
@@ -135,8 +126,6 @@ const Peminjaman = () => {
       fetchCategories();
     }
   }, []);
-
-
 
   const fetchPeminjaman = async () => {
     setLoading(true);
@@ -165,7 +154,7 @@ const Peminjaman = () => {
       ]);
       const allKategori = kategoriRes.data.data || [];
       const availableBarang = availableRes.data.data || [];
-      // Filter: hanya tampilkan kategori yang punya barang tersedia
+      
       const kategoriIdsWithBarang = new Set(availableBarang.map(b => String(b.kategori_id)));
       const filtered = allKategori.filter(cat => kategoriIdsWithBarang.has(String(cat.id)));
       setCategories(filtered);
@@ -177,7 +166,7 @@ const Peminjaman = () => {
   const fetchBarangByKategori = async (kategoriId) => {
     setBarangLoading(true);
     try {
-      // Fetch available barang filtered by kategori
+      
       const res = await api.get('/barang/available');
       const allBarang = res.data.data || [];
       const filtered = allBarang.filter(b => String(b.kategori_id) === String(kategoriId));
@@ -206,7 +195,7 @@ const Peminjaman = () => {
     }
   };
 
-  // ============ PEGAWAI: KATEGORI CLICK ============
+  
   const handleKategoriClick = (cat) => {
     setSelectedKategori(cat);
     fetchBarangByKategori(cat.id);
@@ -217,7 +206,7 @@ const Peminjaman = () => {
     setBarangKategori([]);
   };
 
-  // ============ PEGAWAI: PINJAM BARANG ============
+  
   const handlePinjamClick = (barang) => {
     setSelectedBarang(barang);
     setFormPinjam({
@@ -236,6 +225,12 @@ const Peminjaman = () => {
     e.preventDefault();
     if (!formPinjam.tanggal_pinjam || !formPinjam.tanggal_kembali_rencana) {
       toast.error('Tanggal pinjam dan tanggal kembali wajib diisi');
+      return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    if (formPinjam.tanggal_pinjam < today) {
+      toast.error('Tanggal pinjam tidak boleh sebelum hari ini');
       return;
     }
     const maxJumlah = selectedBarang.tersedia != null ? selectedBarang.tersedia : selectedBarang.jumlah;
@@ -278,7 +273,7 @@ const Peminjaman = () => {
     setSaving(false);
   };
 
-  // ============ ADMIN: BUAT PEMINJAMAN ============
+  
   const handleAdminAdd = async () => {
     setAdminForm({
       pegawai_id: '', barang_id: '', jumlah: 1,
@@ -310,7 +305,7 @@ const Peminjaman = () => {
       toast.error('Foto bukti peminjaman wajib diambil dari kamera');
       return;
     }
-    // Validate jumlah against available stock
+    
     const selectedBarangAdmin = availableBarang.find(b => String(b.id) === String(adminForm.barang_id));
     if (selectedBarangAdmin) {
       const maxJumlah = selectedBarangAdmin.tersedia != null ? selectedBarangAdmin.tersedia : selectedBarangAdmin.jumlah;
@@ -346,7 +341,7 @@ const Peminjaman = () => {
     setAdminSaving(false);
   };
 
-  // ============ ADMIN: APPROVE / REJECT ============
+  
   const handleApprove = async () => {
     try {
       await api.put(`/peminjaman/${actionItem.id}/approve`);
@@ -369,12 +364,13 @@ const Peminjaman = () => {
     fetchPeminjaman();
   };
 
-  // ===== HELPER: Render action buttons for admin (matches Pengembalian style) =====
+  
   const renderAdminActions = (item, variant = 'default') => {
     const isPending = item.status === 'Menunggu Persetujuan';
     return (
       <div className="flex items-center gap-1.5">
-        {/* Detail */}
+        {
+}
         <button
           onClick={() => { setDetailItem(item); setShowDetail(true); }}
           className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-600 text-xs font-semibold transition-all duration-200 touch-manipulation min-h-[36px]"
@@ -383,7 +379,8 @@ const Peminjaman = () => {
           <FiEye className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Detail</span>
         </button>
-        {/* Setujui */}
+        {
+}
         {isPending && (
           <button
             onClick={() => { setActionItem(item); setShowApprove(true); }}
@@ -394,7 +391,8 @@ const Peminjaman = () => {
             <span className="hidden sm:inline">Setujui</span>
           </button>
         )}
-        {/* Tolak */}
+        {
+}
         {isPending && (
           <button
             onClick={() => { setActionItem(item); setShowReject(true); }}
@@ -405,7 +403,8 @@ const Peminjaman = () => {
             <span className="hidden sm:inline">Tolak</span>
           </button>
         )}
-        {/* Cetak */}
+        {
+}
         {variant === 'full' && (
           <button
             onClick={() => handlePrint(item)}
@@ -420,10 +419,10 @@ const Peminjaman = () => {
     );
   };
 
-  // ============ BULK ACTIONS ============
+  
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
-  // Group pending items by pegawai
+  
   const groupedPending = useMemo(() => {
     const pending = peminjaman.filter(p => p.status === 'Menunggu Persetujuan');
     const groups = {};
@@ -438,7 +437,7 @@ const Peminjaman = () => {
       }
       groups[key].items.push(p);
     });
-    // Only show groups with 2+ items
+    
     return Object.values(groups).filter(g => g.items.length >= 2);
   }, [peminjaman]);
 
@@ -476,10 +475,9 @@ const Peminjaman = () => {
     w.print();
   };
 
-  // Stats
+  
 
-
-  // ============ PEGAWAI VIEW ============
+  
   if (!isAdmin) {
     return (
       <div className="page-container">
@@ -488,9 +486,11 @@ const Peminjaman = () => {
           <p className="page-subtitle">Pilih kategori barang, lalu ajukan peminjaman</p>
         </div>
 
-        {/* KATEGORI VIEW or BARANG VIEW */}
+        {
+}
         {!selectedKategori ? (
-          /* ======= KATEGORI GRID ======= */
+          
+
           <>
             <div className="bg-white rounded-2xl p-4 shadow-sm mb-6">
               <div className="flex items-center justify-between">
@@ -527,10 +527,10 @@ const Peminjaman = () => {
               })}
             </div>
 
-
           </>
         ) : (
-          /* ======= BARANG BY KATEGORI VIEW ======= */
+          
+
           <>
             <button
               onClick={handleBackToCategories}
@@ -540,7 +540,8 @@ const Peminjaman = () => {
               <span className="font-medium text-sm">Kembali ke Kategori</span>
             </button>
 
-            {/* Kategori Header */}
+            {
+}
             {(() => {
               const colorIdx = (categories.findIndex(c => c.id === selectedKategori.id)) % categoryColors.length;
               const IconComp = getCategoryIcon(selectedKategori.nama);
@@ -563,7 +564,8 @@ const Peminjaman = () => {
               );
             })()}
 
-            {/* Barang Cards */}
+            {
+}
             {barangLoading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BAC]"></div>
@@ -595,7 +597,8 @@ const Peminjaman = () => {
                         isAvailable ? 'border-transparent hover:shadow-lg hover:border-[#005BAC]/20' : 'border-gray-100 opacity-75'
                       }`}
                     >
-                      {/* Image */}
+                      {
+}
                       <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-50 overflow-hidden">
                         {fotoUrl && !imgError ? (
                           <img
@@ -613,7 +616,8 @@ const Peminjaman = () => {
                         )}
                       </div>
 
-                      {/* Content */}
+                      {
+}
                       <div className="p-4">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="text-sm font-bold text-gray-800 line-clamp-1 flex-1">{barang.nama_barang}</h3>
@@ -648,11 +652,13 @@ const Peminjaman = () => {
           </>
         )}
 
-        {/* ========== MODAL PINJAM BARANG (PEGAWAI) ========== */}
+        {
+}
         <Modal isOpen={showPinjamModal} onClose={() => setShowPinjamModal(false)} title="Ajukan Peminjaman" size="md">
           {selectedBarang && (
             <form onSubmit={handlePinjamSubmit}>
-              {/* Info Barang */}
+              {
+}
               <div className="bg-[#E8F1FA] rounded-xl p-4 mb-5">
                 <div className="flex items-center gap-3">
                   {(() => {
@@ -676,7 +682,8 @@ const Peminjaman = () => {
                 </div>
               </div>
 
-              {/* Peminjam */}
+              {
+}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Peminjam</label>
                 <div className="input-field bg-gray-50 text-gray-600">{user?.nama}</div>
@@ -731,7 +738,8 @@ const Peminjaman = () => {
                 </div>
               </div>
 
-              {/* Foto Bukti Peminjaman */}
+              {
+}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Foto Bukti Peminjaman <span className="text-red-500">*</span>
@@ -771,7 +779,8 @@ const Peminjaman = () => {
           )}
         </Modal>
 
-        {/* ========== MODAL DETAIL (PEGAWAI) ========== */}
+        {
+}
         <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title="Detail Peminjaman" size="md">
           {detailItem && (
             <div className="space-y-4">
@@ -798,13 +807,14 @@ const Peminjaman = () => {
           )}
         </Modal>
 
-        {/* ========== MODAL DETAIL (PEGAWAI) ========== */}
+        {
+}
       </div>
     );
   }
 
-  // ============ ADMIN VIEW ============
-  // IDs of pending items shown in groups (to mark in table)
+  
+  
   const groupedPendingIds = useMemo(() => new Set(groupedPending.flatMap(g => g.items.map(i => i.id))), [groupedPending]);
 
   return (
@@ -826,7 +836,8 @@ const Peminjaman = () => {
         </div>
       </div>
 
-      {/* ======= GROUPED PENDING REQUESTS ======= */}
+      {
+}
       {groupedPending.length > 0 && (
         <div className="space-y-4 mb-4">
           <div className="flex items-center gap-2">
@@ -836,7 +847,8 @@ const Peminjaman = () => {
           </div>
           {groupedPending.map((group) => (
             <div key={group.pegawai_id} className="bg-white rounded-2xl shadow-sm border border-amber-100 overflow-hidden">
-              {/* Group header */}
+              {
+}
               <div className="bg-amber-50 border-b border-amber-100 px-4 sm:px-5 py-3">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
@@ -868,7 +880,8 @@ const Peminjaman = () => {
                   </div>
                 </div>
               </div>
-              {/* Items list */}
+              {
+}
               <div className="divide-y divide-gray-50">
                 {group.items.map((item) => {
                   const fotoUrl = item.barang_foto ? getBarangFotoUrl(item.barang_foto) : null;
@@ -973,7 +986,8 @@ const Peminjaman = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden space-y-3 p-4">
           {peminjaman.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -1018,7 +1032,8 @@ const Peminjaman = () => {
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalItems} itemsPerPage={itemsPerPage} />
       </div>
 
-      {/* Admin Create Modal */}
+      {
+}
       <Modal isOpen={showAdminModal} onClose={() => setShowAdminModal(false)} title="Buat Peminjaman" size="lg">
         <form onSubmit={handleAdminSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1065,7 +1080,8 @@ const Peminjaman = () => {
               <textarea value={adminForm.keperluan} onChange={(e) => setAdminForm({ ...adminForm, keperluan: e.target.value })} placeholder="Jelaskan keperluan peminjaman" rows={3} className="input-field" required />
             </div>
 
-            {/* Foto Bukti Peminjaman */}
+            {
+}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Foto Bukti Peminjaman <span className="text-red-500">*</span>
@@ -1085,17 +1101,20 @@ const Peminjaman = () => {
         </form>
       </Modal>
 
-      {/* Detail Modal (Admin) */}
+      {
+}
       <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title="Detail Peminjaman" size="md">
         {detailItem && (
           <div className="space-y-4">
-            {/* Foto bukti peminjaman */}
+            {
+}
             {detailItem.foto && (
               <div className="rounded-xl overflow-hidden bg-gray-100 mb-2">
                 <img src={getBarangFotoUrl(detailItem.foto)} alt="Foto bukti peminjaman" className="w-full aspect-video object-contain" onError={(e) => { e.target.style.display = 'none'; }} />
               </div>
             )}
-            {/* Foto barang */}
+            {
+}
             {(() => {
               const fotoUrl = detailItem.barang_foto ? getBarangFotoUrl(detailItem.barang_foto) : null;
               const imgErr = imgErrors[`detail-admin-${detailItem.id}`];

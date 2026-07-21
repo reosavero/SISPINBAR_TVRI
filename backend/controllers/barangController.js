@@ -1,6 +1,4 @@
-// ============================================
-// BARANG CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const barangService = require('../services/barangService');
 

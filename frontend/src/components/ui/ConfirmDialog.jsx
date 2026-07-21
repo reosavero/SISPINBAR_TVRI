@@ -1,7 +1,4 @@
-// ============================================
-// CONFIRM DIALOG COMPONENT
-// Mobile-Responsive: Bottom Sheet on Mobile
-// ============================================
+
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiAlertTriangle } from 'react-icons/fi';
@@ -44,7 +41,8 @@ const ConfirmDialog = ({
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             className="relative bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl p-5 sm:p-6 w-full sm:max-w-sm"
           >
-            {/* Drag indicator for mobile */}
+            {
+}
             <div className="sm:hidden flex justify-center mb-3">
               <div className="w-10 h-1 bg-gray-300 rounded-full" />
             </div>

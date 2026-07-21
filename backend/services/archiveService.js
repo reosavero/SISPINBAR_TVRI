@@ -1,7 +1,4 @@
-// ============================================
-// ARCHIVE SERVICE - Sistem Peminjaman Barang TVRI
-// Soft delete / arsip riwayat per bulan
-// ============================================
+
 
 const pool = require('../config/db');
 const ExcelJS = require('exceljs');
@@ -9,7 +6,6 @@ const fs = require('fs');
 const path = require('path');
 const { formatDate, formatDateTime } = require('../utils/helpers');
 
-// Helper: resolve image path
 const resolveImagePath = (urlPath) => {
   if (!urlPath) return null;
   try {
@@ -41,17 +37,17 @@ const BULAN_NAMES = [
 
 const archiveService = {
 
-  // ==========================================
-  // ARCHIVE PREVIOUS MONTHS
-  // Mark all records from previous months as archived
-  // ==========================================
+  
+  
+  
+  
   archivePreviousMonths: async () => {
     const now = new Date();
-    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentMonth = now.getMonth() + 1; 
     const currentYear = now.getFullYear();
 
-    // Archive all records where tanggal_pinjam is before the current month
-    // AND not already archived
+    
+    
     const [result] = await pool.execute(
       `UPDATE peminjaman
        SET archived_at = NOW()
@@ -66,9 +62,9 @@ const archiveService = {
     return { archived: result.affectedRows, currentMonth, currentYear };
   },
 
-  // ==========================================
-  // GET YEARS THAT HAVE ARCHIVED DATA
-  // ==========================================
+  
+  
+  
   getArchiveYears: async () => {
     const [rows] = await pool.execute(
       `SELECT DISTINCT YEAR(tanggal_pinjam) AS tahun
@@ -79,9 +75,9 @@ const archiveService = {
     return rows.map(r => r.tahun);
   },
 
-  // ==========================================
-  // GET MONTHS THAT HAVE ARCHIVED DATA FOR A YEAR
-  // ==========================================
+  
+  
+  
   getArchiveMonths: async (year) => {
     const [rows] = await pool.execute(
       `SELECT DISTINCT MONTH(tanggal_pinjam) AS bulan,
@@ -100,9 +96,9 @@ const archiveService = {
     }));
   },
 
-  // ==========================================
-  // GET ARCHIVED DATA FOR A SPECIFIC MONTH/YEAR
-  // ==========================================
+  
+  
+  
   getArchiveData: async (year, month, page = 1, limit = 10) => {
     const offset = (page - 1) * limit;
 
@@ -143,7 +139,7 @@ const archiveService = {
     const totalItems = countResult[0].total;
     const totalPages = Math.ceil(totalItems / limit);
 
-    // Summary
+    
     const dikembalikan = rows.filter(r => r.status === 'Dikembalikan').length;
     const dipinjam = rows.filter(r => r.status === 'Dipinjam' || r.status === 'Disetujui').length;
     const ditolak = rows.filter(r => r.status === 'Ditolak').length;
@@ -162,11 +158,11 @@ const archiveService = {
     };
   },
 
-  // ==========================================
-  // EXPORT ARCHIVED DATA TO EXCEL
-  // ==========================================
+  
+  
+  
   exportArchiveExcel: async (year, month) => {
-    // Get ALL archived data for the month (no pagination)
+    
     const [data] = await pool.execute(
       `SELECT p.id, p.nomor_peminjaman, p.pegawai_id, p.barang_id, p.jumlah,
               p.tanggal_pinjam, p.tanggal_kembali_rencana, p.keperluan, p.status,
@@ -222,7 +218,7 @@ const archiveService = {
       },
     };
 
-    // Title
+    
     const lastCol = 'P';
     sheet.mergeCells(`A1:${lastCol}1`);
     const titleCell = sheet.getCell('A1');
@@ -237,7 +233,7 @@ const archiveService = {
     dateCell.font = { size: 10, color: { argb: 'FF666666' } };
     dateCell.alignment = { horizontal: 'center' };
 
-    // Summary
+    
     const dikembalikan = data.filter(d => d.status === 'Dikembalikan').length;
     const dipinjam = data.filter(d => d.status === 'Dipinjam' || d.status === 'Disetujui').length;
     const ditolak = data.filter(d => d.status === 'Ditolak').length;
@@ -263,7 +259,7 @@ const archiveService = {
     sheet.getCell('I3').value = ditolak;
     sheet.getCell('I3').font = { bold: true, size: 10, color: { argb: 'FFEF4444' } };
 
-    // Headers
+    
     const headers = [
       'No', 'Nomor Peminjaman', 'Pegawai', 'NIP', 'Divisi',
       'Barang', 'Kategori', 'Jumlah', 'Tgl Pinjam', 'Tgl Kembali Rencana',
@@ -313,7 +309,7 @@ const archiveService = {
         }
       });
 
-      // Status color
+      
       const statusCell = row.getCell(12);
       if (item.status) {
         const statusColors = {
@@ -326,7 +322,7 @@ const archiveService = {
 
       row.height = 80;
 
-      // Embed images
+      
       const imageFields = [
         { url: item.barang_foto, col: 14 },
         { url: item.foto_peminjaman || item.foto, col: 15 },

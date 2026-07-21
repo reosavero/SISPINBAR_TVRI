@@ -1,7 +1,4 @@
-// ============================================
-// PENGEMBALIAN PAGE - Sistem Peminjaman Barang TVRI
-// Updated: Detail, Diterima, Ditolak actions for Menunggu Konfirmasi
-// ============================================
+
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
@@ -15,7 +12,7 @@ import ConfirmDialog from '../../components/ui/ConfirmDialog';
 import { KONDISI_BARANG } from '../../utils/constants';
 import CameraUpload from '../../components/ui/CameraUpload';
 import NumberInput from '../../components/ui/NumberInput';
-import { formatDate, formatDatePukul, getBarangFotoUrl, getPengembalianFotoUrl } from '../../utils/format';
+import { formatDate, formatDatePukul, formatTimeAlways, getBarangFotoUrl, getPengembalianFotoUrl } from '../../utils/format';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
@@ -26,12 +23,12 @@ const Pengembalian = () => {
   const [loading, setLoading] = useState(true);
   const [imgErrors, setImgErrors] = useState({});
 
-  // Return modal
+  
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedPeminjaman, setSelectedPeminjaman] = useState(null);
 
-  // Edit modal
+  
   const [showEditModal, setShowEditModal] = useState(false);
   const [editItem, setEditItem] = useState(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -43,29 +40,29 @@ const Pengembalian = () => {
   const [editFotoLama, setEditFotoLama] = useState(null);
   const [availableBarang, setAvailableBarang] = useState([]);
 
-  // Delete confirm
+  
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
 
-  // Foto state (return)
+  
   const [fotoPreview, setFotoPreview] = useState(null);
   const [fotoFile, setFotoFile] = useState(null);
 
-  // Success state
+  
   const [returnSuccess, setReturnSuccess] = useState(false);
   const [returnedItem, setReturnedItem] = useState(null);
 
-  // Confirm state (admin)
+  
   const [menungguKonfirmasi, setMenungguKonfirmasi] = useState([]);
   const [confirmLoading, setConfirmLoading] = useState({});
   const [bulkConfirmLoading, setBulkConfirmLoading] = useState(false);
 
-  // Detail modal
+  
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailData, setDetailData] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // Reject modal
+  
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectItem, setRejectItem] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
@@ -83,7 +80,7 @@ const Pengembalian = () => {
       const peminjamanRes = await api.get('/peminjaman', { params: peminjamanParams });
       setPeminjamanAktif(peminjamanRes.data.data || []);
 
-      // Fetch menunggu konfirmasi (admin only)
+      
       if (isAdmin) {
         try {
           const res = await api.get('/pengembalian', { params: { status: 'Menunggu Konfirmasi' } });
@@ -110,7 +107,7 @@ const Pengembalian = () => {
     }
   };
 
-  // ===== RETURN =====
+  
   const handleOpenReturn = (item) => {
     setSelectedPeminjaman(item);
     setForm({ kondisi_barang: 'Baik', catatan: '' });
@@ -145,7 +142,7 @@ const Pengembalian = () => {
       setFotoPreview(null);
       setFotoFile(null);
 
-      // Refresh data after short delay
+      
       setTimeout(() => {
         fetchAllData();
       }, 500);
@@ -162,7 +159,7 @@ const Pengembalian = () => {
     setReturnedItem(null);
   };
 
-  // ===== ADMIN CONFIRM RETURN =====
+  
   const handleConfirmReturn = async (pengembalianId) => {
     setConfirmLoading(prev => ({ ...prev, [pengembalianId]: true }));
     try {
@@ -175,7 +172,7 @@ const Pengembalian = () => {
     setConfirmLoading(prev => ({ ...prev, [pengembalianId]: false }));
   };
 
-  // ===== DETAIL =====
+  
   const handleOpenDetail = async (pengembalianId) => {
     setDetailLoading(true);
     setShowDetailModal(true);
@@ -189,7 +186,7 @@ const Pengembalian = () => {
     setDetailLoading(false);
   };
 
-  // ===== REJECT =====
+  
   const handleOpenReject = (item) => {
     setRejectItem(item);
     setRejectReason('');
@@ -214,7 +211,7 @@ const Pengembalian = () => {
     setRejectLoading(false);
   };
 
-  // ===== EDIT =====
+  
   const handleOpenEdit = (item) => {
     setEditItem(item);
     setEditForm({
@@ -233,6 +230,12 @@ const Pengembalian = () => {
 
   const handleEditSubmit = async (e) => {
     e.preventDefault();
+    
+    const today = new Date().toISOString().split('T')[0];
+    if (editForm.tanggal_pinjam < today) {
+      toast.error('Tanggal pinjam tidak boleh sebelum hari ini');
+      return;
+    }
     setEditSaving(true);
     try {
       const formData = new FormData();
@@ -259,7 +262,7 @@ const Pengembalian = () => {
     setEditSaving(false);
   };
 
-  // ===== DELETE =====
+  
   const handleOpenDelete = (item) => {
     setDeleteItem(item);
     setShowDeleteConfirm(true);
@@ -277,15 +280,15 @@ const Pengembalian = () => {
     }
   };
 
-  // Get selected barang for edit form
+  
   const selectedEditBarang = availableBarang.find(b => String(b.id) === String(editForm.barang_id));
 
-  // Separate active peminjaman by status
+  
   const menungguPersetujuan = peminjamanAktif.filter(p => p.status === 'Menunggu Persetujuan');
   const dipinjamItems = peminjamanAktif.filter(p => p.status === 'Dipinjam' || p.status === 'Disetujui');
   const menungguKonfirmasiItems = peminjamanAktif.filter(p => p.status === 'Menunggu Konfirmasi');
 
-  // Group menunggu konfirmasi by pegawai (admin view)
+  
   const groupedMenungguKonfirmasi = useMemo(() => {
     if (!isAdmin) return [];
     const groups = {};
@@ -300,14 +303,14 @@ const Pengembalian = () => {
       }
       groups[key].items.push(item);
     });
-    // Only show groups with 2+ items
+    
     return Object.values(groups).filter(g => g.items.length >= 2);
   }, [isAdmin, menungguKonfirmasi]);
 
-  // Flat list of grouped pengembalian IDs (to avoid duplicate display)
+  
   const groupedKonfirmasiIds = useMemo(() => new Set(groupedMenungguKonfirmasi.flatMap(g => g.items.map(i => i.peminjaman_id))), [groupedMenungguKonfirmasi]);
 
-  // Handle bulk confirm
+  
   const handleBulkConfirm = async (group) => {
     const ids = group.items.map(item => item.id);
     setBulkConfirmLoading(true);
@@ -321,12 +324,13 @@ const Pengembalian = () => {
     setBulkConfirmLoading(false);
   };
 
-  // ===== HELPER: Render action buttons for Menunggu Konfirmasi items =====
+  
   const renderAdminActions = (item, isGrouped = false) => {
     const isLoading = confirmLoading[item.id];
     return (
       <div className="flex items-center gap-1.5">
-        {/* Lihat Detail */}
+        {
+}
         <button
           onClick={() => handleOpenDetail(item.id)}
           className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-600 text-xs font-semibold transition-all duration-200 touch-manipulation ${isGrouped ? '' : 'min-h-[36px]'}`}
@@ -335,7 +339,8 @@ const Pengembalian = () => {
           <FiEye className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Detail</span>
         </button>
-        {/* Diterima */}
+        {
+}
         <button
           onClick={() => handleConfirmReturn(item.id)}
           disabled={isLoading}
@@ -352,7 +357,8 @@ const Pengembalian = () => {
           )}
           <span className="hidden sm:inline">Terima</span>
         </button>
-        {/* Ditolak */}
+        {
+}
         <button
           onClick={() => handleOpenReject(item)}
           className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs font-semibold shadow-sm shadow-red-200 hover:shadow-md transition-all duration-200 active:scale-95 touch-manipulation ${isGrouped ? '' : 'min-h-[36px]'}`}
@@ -365,7 +371,7 @@ const Pengembalian = () => {
     );
   };
 
-  // ===== HELPER: Kondisi badge =====
+  
   const renderKondisiBadge = (kondisi) => {
     const colorMap = {
       'Baik': 'bg-emerald-50 text-emerald-700',
@@ -388,7 +394,8 @@ const Pengembalian = () => {
         </p>
       </div>
 
-      {/* ===== SECTION 1: SEDANG DIPINJAM (can be returned) ===== */}
+      {
+}
       <div className="bg-white rounded-2xl shadow-sm mb-6">
         <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
@@ -419,7 +426,8 @@ const Pengembalian = () => {
           </div>
         ) : (
           <>
-            {/* Desktop Table */}
+            {
+}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -428,6 +436,7 @@ const Pengembalian = () => {
                     {isAdmin && <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Pegawai</th>}
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Jumlah</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Tgl Pinjam</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Pukul</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Rencana Kembali</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
                     <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase">Aksi</th>
@@ -459,7 +468,12 @@ const Pengembalian = () => {
                         <td className="py-3 px-4">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-medium">{item.jumlah || 1}</span>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{formatDatePukul(item.tanggal_pinjam)}</td>
+                        <td className="py-3 px-4 text-sm text-gray-600">
+                          {formatDate(item.tanggal_pinjam)}
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-500 font-medium">
+                          {formatTimeAlways(item.tanggal_pinjam)}
+                        </td>
                         <td className="py-3 px-4 text-sm text-gray-600">{formatDate(item.tanggal_kembali_rencana)}</td>
                         <td className="py-3 px-4">
                           <div className="flex flex-col items-start gap-0.5">
@@ -489,7 +503,8 @@ const Pengembalian = () => {
               </table>
             </div>
 
-            {/* Mobile Cards */}
+            {
+}
             <div className="md:hidden space-y-3 p-4">
               {dipinjamItems.map((item) => {
                 const fotoUrl = item.barang_foto ? getBarangFotoUrl(item.barang_foto) : null;
@@ -514,7 +529,8 @@ const Pengembalian = () => {
                     {isAdmin && <p className="text-xs text-gray-500 mb-2">Pegawai: <span className="font-medium text-gray-700">{item.pegawai_nama}</span></p>}
                     <div className="grid grid-cols-2 gap-2 text-xs text-gray-500 mb-3">
                       <div><span className="text-gray-400">Jumlah:</span> <span className="font-medium text-gray-700">{item.jumlah || 1}</span></div>
-                      <div><span className="text-gray-400">Pinjam:</span> <span className="font-medium text-gray-700">{formatDatePukul(item.tanggal_pinjam)}</span></div>
+                      <div><span className="text-gray-400">Pinjam:</span> <span className="font-medium text-gray-700">{formatDate(item.tanggal_pinjam)}</span></div>
+                      <div><span className="text-gray-400">Pukul:</span> <span className="font-medium text-gray-700">{formatTimeAlways(item.tanggal_pinjam)}</span></div>
                       <div className="col-span-2"><span className="text-gray-400">Rencana Kembali:</span> <span className="font-medium text-gray-700">{formatDate(item.tanggal_kembali_rencana)}</span></div>
                     </div>
                     {canReturn && (
@@ -534,10 +550,12 @@ const Pengembalian = () => {
         )}
       </div>
 
-      {/* ===== SECTION 2: MENUNGGU KONFIRMASI (admin only) ===== */}
+      {
+}
       {isAdmin && menungguKonfirmasi.length > 0 && (
         <>
-          {/* ======= GROUPED PENDING RETURNS (same pegawai, 2+ items) ======= */}
+          {
+}
           {groupedMenungguKonfirmasi.length > 0 && (
             <div className="space-y-4 mb-4">
               <div className="flex items-center gap-2">
@@ -547,7 +565,8 @@ const Pengembalian = () => {
               </div>
               {groupedMenungguKonfirmasi.map((group) => (
                 <div key={group.pegawai_id} className="bg-white rounded-2xl shadow-sm border border-blue-100 overflow-hidden">
-                  {/* Group header */}
+                  {
+}
                   <div className="bg-blue-50 border-b border-blue-100 px-4 sm:px-5 py-3">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
@@ -571,7 +590,8 @@ const Pengembalian = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Items list */}
+                  {
+}
                   <div className="divide-y divide-gray-50">
                     {group.items.map((item) => {
                       const fotoUrl = item.barang_foto ? getBarangFotoUrl(item.barang_foto) : null;
@@ -592,7 +612,8 @@ const Pengembalian = () => {
                           <div className="hidden sm:flex items-center gap-1.5">
                             {renderAdminActions(item, true)}
                           </div>
-                          {/* Mobile action buttons */}
+                          {
+}
                           <div className="flex sm:hidden items-center gap-1">
                             <button onClick={() => handleOpenDetail(item.id)} className="p-2 rounded-lg hover:bg-blue-50 active:bg-blue-100 text-blue-600 touch-manipulation" title="Detail">
                               <FiEye className="w-4 h-4" />
@@ -613,7 +634,8 @@ const Pengembalian = () => {
             </div>
           )}
 
-          {/* ======= INDIVIDUAL ITEMS (not grouped) ======= */}
+          {
+}
           {(() => {
             const ungroupedItems = menungguKonfirmasi.filter(item => !groupedKonfirmasiIds.has(item.peminjaman_id));
             if (ungroupedItems.length === 0) return null;
@@ -633,7 +655,8 @@ const Pengembalian = () => {
                   </div>
                 </div>
 
-                {/* Desktop Table */}
+                {
+}
                 <div className="hidden md:block overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -681,7 +704,8 @@ const Pengembalian = () => {
                   </table>
                 </div>
 
-                {/* Mobile Cards */}
+                {
+}
                 <div className="md:hidden space-y-3 p-4">
                   {ungroupedItems.map((item) => {
                     const fotoUrl = item.barang_foto ? getBarangFotoUrl(item.barang_foto) : null;
@@ -704,7 +728,8 @@ const Pengembalian = () => {
                         </div>
                         {isAdmin && <p className="text-xs text-gray-500 mb-2">Pegawai: <span className="font-medium text-gray-700">{item.pegawai_nama}</span></p>}
                         <div className="text-xs text-gray-500 mb-3">⏳ Dikembalikan: <span className="font-medium text-gray-700">{formatDatePukul(item.tanggal_kembali_aktual)}</span></div>
-                        {/* Mobile Action Buttons */}
+                        {
+}
                         <div className="flex items-center gap-2 pt-3 border-t border-blue-200">
                           <button
                             onClick={() => handleOpenDetail(item.id)}
@@ -746,7 +771,8 @@ const Pengembalian = () => {
         </>
       )}
 
-      {/* ===== SECTION 3: MENUNGGU KONFIRMASI PEGAWAI (pegawai only) ===== */}
+      {
+}
       {!isAdmin && menungguKonfirmasiItems.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm mb-6">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
@@ -834,7 +860,8 @@ const Pengembalian = () => {
         </div>
       )}
 
-      {/* ===== SECTION 4: MENUNGGU PERSETUJUAN (pegawai only) ===== */}
+      {
+}
       {!isAdmin && menungguPersetujuan.length > 0 && (
         <div className="bg-white rounded-2xl shadow-sm mb-6">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
@@ -937,10 +964,12 @@ const Pengembalian = () => {
         </div>
       )}
 
-      {/* ===== RETURN MODAL ===== */}
+      {
+}
       <Modal isOpen={showModal} onClose={handleCloseModal} title={returnSuccess ? 'Pengembalian Berhasil!' : 'Konfirmasi Pengembalian'} size="md">
         {returnSuccess ? (
-          /* Success State */
+          
+
           <div className="text-center py-6">
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <FiCheckCircle className="w-10 h-10 text-emerald-500" />
@@ -975,7 +1004,8 @@ const Pengembalian = () => {
             </Button>
           </div>
         ) : (
-          /* Return Form */
+          
+
           <form onSubmit={handleSubmit}>
             <div className="mb-5 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-200/60 rounded-xl">
               <div className="flex items-center gap-2 mb-3">
@@ -1055,7 +1085,8 @@ const Pengembalian = () => {
         )}
       </Modal>
 
-      {/* ===== DETAIL MODAL ===== */}
+      {
+}
       <Modal isOpen={showDetailModal} onClose={() => { setShowDetailModal(false); setDetailData(null); }} title="Detail Pengembalian" size="md">
         {detailLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -1066,7 +1097,8 @@ const Pengembalian = () => {
           </div>
         ) : detailData ? (
           <div className="space-y-4">
-            {/* Foto bukti pengembalian */}
+            {
+}
             {detailData.foto && (
               <div className="rounded-xl overflow-hidden bg-gray-100">
                 <img
@@ -1078,7 +1110,8 @@ const Pengembalian = () => {
               </div>
             )}
 
-            {/* Header: Nomor Peminjaman + Status Badge */}
+            {
+}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100">
               <div>
                 <p className="text-lg font-bold text-[#005BAC]">{detailData.nomor_peminjaman || '-'}</p>
@@ -1087,7 +1120,8 @@ const Pengembalian = () => {
               <Badge status={detailData.status} />
             </div>
 
-            {/* Informasi Peminjaman */}
+            {
+}
             <div className="grid grid-cols-2 gap-4">
               <div><p className="text-xs text-gray-500">Pegawai</p><p className="text-sm font-semibold">{detailData.pegawai_nama || '-'}</p></div>
               <div><p className="text-xs text-gray-500">Barang</p><p className="text-sm font-semibold">{detailData.barang_nama || '-'}</p></div>
@@ -1097,17 +1131,20 @@ const Pengembalian = () => {
               <div><p className="text-xs text-gray-500">Rencana Kembali</p><p className="text-sm">{formatDate(detailData.tanggal_kembali_rencana)}</p></div>
             </div>
 
-            {/* Keperluan */}
+            {
+}
             {detailData.keperluan && (
               <div><p className="text-xs text-gray-500">Keperluan</p><p className="text-sm">{detailData.keperluan}</p></div>
             )}
 
-            {/* Catatan Pegawai */}
+            {
+}
             {detailData.catatan && (
               <div><p className="text-xs text-gray-500">Catatan Pegawai</p><p className="text-sm">{detailData.catatan}</p></div>
             )}
 
-            {/* Catatan Admin (jika ditolak) */}
+            {
+}
             {detailData.catatan_admin && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-xs text-red-600 font-medium">Alasan Penolakan</p>
@@ -1115,7 +1152,8 @@ const Pengembalian = () => {
               </div>
             )}
 
-            {/* Action Buttons (hanya jika Menunggu Konfirmasi) */}
+            {
+}
             {detailData.status === 'Menunggu Konfirmasi' && (
               <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
                 <button
@@ -1142,11 +1180,13 @@ const Pengembalian = () => {
         )}
       </Modal>
 
-      {/* ===== REJECT MODAL ===== */}
+      {
+}
       <Modal isOpen={showRejectModal} onClose={() => { setShowRejectModal(false); setRejectItem(null); setRejectReason(''); }} title="Tolak Pengembalian" size="md">
         {rejectItem && (
           <div>
-            {/* Warning */}
+            {
+}
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -1161,7 +1201,8 @@ const Pengembalian = () => {
               </div>
             </div>
 
-            {/* Item Info */}
+            {
+}
             <div className="mb-4 p-4 bg-gray-50 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 {rejectItem.barang_foto ? (
@@ -1196,7 +1237,8 @@ const Pengembalian = () => {
               </div>
             </div>
 
-            {/* Reject Reason */}
+            {
+}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1.5">
                 Alasan Penolakan <span className="text-gray-400 text-xs">(opsional)</span>
@@ -1211,7 +1253,8 @@ const Pengembalian = () => {
               <p className="text-xs text-gray-400 mt-1">Alasan ini akan dikirimkan sebagai notifikasi kepada pegawai</p>
             </div>
 
-            {/* Action Buttons */}
+            {
+}
             <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
               <Button variant="outline" onClick={() => { setShowRejectModal(false); setRejectItem(null); setRejectReason(''); }} className="flex-1 min-h-[44px]">
                 Batal
@@ -1241,7 +1284,8 @@ const Pengembalian = () => {
         )}
       </Modal>
 
-      {/* ===== EDIT MODAL ===== */}
+      {
+}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Peminjaman" size="md">
         {editItem && (
           <form onSubmit={handleEditSubmit}>
@@ -1361,7 +1405,8 @@ const Pengembalian = () => {
         )}
       </Modal>
 
-      {/* ===== DELETE CONFIRM ===== */}
+      {
+}
       <ConfirmDialog
         isOpen={showDeleteConfirm}
         onClose={() => { setShowDeleteConfirm(false); setDeleteItem(null); }}

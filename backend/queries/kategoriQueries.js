@@ -1,6 +1,4 @@
-// ============================================
-// KATEGORI QUERIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const kategoriQueries = {
   getAll: `

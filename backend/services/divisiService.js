@@ -1,6 +1,4 @@
-// ============================================
-// DIVISI SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const divisiQueries = require('../queries/divisiQueries');
@@ -99,7 +97,7 @@ const divisiService = {
     const divisi = await divisiService.getById(id);
     if (!divisi) throw new Error('Divisi tidak ditemukan');
 
-    // Check if divisi is used by any pegawai
+    
     const [usedBy] = await pool.execute(
       'SELECT COUNT(*) AS total FROM users WHERE divisi = ? AND role = \'pegawai\' AND deleted_at IS NULL',
       [divisi.nama]

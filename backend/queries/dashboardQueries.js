@@ -1,7 +1,4 @@
-// ============================================
-// DASHBOARD QUERIES - Sistem Peminjaman Barang TVRI
-// (pegawai merged into users table)
-// ============================================
+
 
 const dashboardQueries = {
   getStats: `
@@ -19,7 +16,7 @@ const dashboardQueries = {
       (SELECT COUNT(*) FROM lokasi WHERE status = 'Tidak Aktif' AND deleted_at IS NULL) AS lokasi_tidak_aktif
   `,
 
-  // Pegawai dashboard stats
+  
   getPegawaiStats: `
     SELECT
       (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam')) AS aktif,
@@ -29,7 +26,7 @@ const dashboardQueries = {
       (SELECT COUNT(*) FROM peminjaman WHERE pegawai_id = ? AND status = 'Ditolak') AS ditolak
   `,
 
-  // Pegawai recent peminjaman
+  
   getPegawaiRecentPeminjaman: `
     SELECT p.*, b.nama_barang AS barang_nama, b.kode_barang, b.foto AS barang_foto,
            k.nama AS kategori_nama
@@ -41,7 +38,7 @@ const dashboardQueries = {
     LIMIT ? OFFSET ?
   `,
 
-  // Pegawai perpanjangan pending
+  
   getPegawaiPerpanjanganPending: `
     SELECT pp.*, p.nomor_peminjaman, b.nama_barang AS barang_nama
     FROM perpanjangan pp

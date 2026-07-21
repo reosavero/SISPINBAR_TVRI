@@ -1,6 +1,4 @@
-// ============================================
-// EMPTY STATE COMPONENT
-// ============================================
+
 
 import { motion } from 'framer-motion';
 import { FiInbox } from 'react-icons/fi';

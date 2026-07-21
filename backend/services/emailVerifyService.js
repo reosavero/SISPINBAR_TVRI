@@ -1,14 +1,9 @@
-// ============================================
-// EMAIL VERIFY SERVICE - Sistem Peminjaman Barang TVRI
-// Verifies email domain has valid MX records
-// Blocks disposable/temporary email domains
-// ============================================
+
 
 const dns = require('dns').promises;
 
-// ========== DISPOSABLE EMAIL DOMAINS ==========
 const DISPOSABLE_DOMAINS = new Set([
-  // Common disposable email services
+  
   'tempmail.com', 'temp-mail.org', 'temp-mail.com', 'temporary-mail.com',
   'throwaway.email', 'throwawaymail.com', 'disposable.email',
   'mailinator.com', 'maildrop.cc', 'maildrop.com', 'guerrillamail.com',
@@ -55,16 +50,14 @@ const DISPOSABLE_DOMAINS = new Set([
   'zact.site', 'zaine.net', 'zasod.com', 'ze.tc',
   'zebins.com', 'zebins.eu', 'zehnminutenmail.de', 'zemo9.com',
   'zepp.dk', 'zipsendtest.com', 'zoaxe.com', 'zomg.info',
-  // Add more as needed
+  
 ]);
 
-// ========== CACHE MX LOOKUP RESULTS ==========
 const mxCache = new Map();
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+const CACHE_TTL = 30 * 60 * 1000; 
 
-// ========== VERIFY EMAIL ==========
 const verifyEmail = async (email) => {
-  // Basic format check
+  
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!email || !emailRegex.test(email)) {
     return { valid: false, reason: 'Format email tidak valid' };
@@ -72,18 +65,18 @@ const verifyEmail = async (email) => {
 
   const domain = email.split('@')[1].toLowerCase().trim();
 
-  // Check disposable domain
+  
   if (DISPOSABLE_DOMAINS.has(domain)) {
     return { valid: false, reason: 'Email sementara/disposable tidak diperbolehkan. Gunakan email permanen.' };
   }
 
-  // Check common typos
+  
   const typoSuggestion = getTypoSuggestion(domain);
   if (typoSuggestion) {
     return { valid: false, reason: `Domain email tidak valid. Apakah maksud Anda ${typoSuggestion}?` };
   }
 
-  // Check MX records (with cache)
+  
   const cachedResult = mxCache.get(domain);
   if (cachedResult && Date.now() - cachedResult.timestamp < CACHE_TTL) {
     if (!cachedResult.hasMx) {
@@ -96,7 +89,7 @@ const verifyEmail = async (email) => {
     const mxRecords = await dns.resolveMx(domain);
     const hasMx = mxRecords && mxRecords.length > 0;
 
-    // Cache the result
+    
     mxCache.set(domain, { hasMx, timestamp: Date.now() });
 
     if (!hasMx) {
@@ -105,19 +98,18 @@ const verifyEmail = async (email) => {
 
     return { valid: true, reason: 'Email valid' };
   } catch (err) {
-    // DNS resolution failed - domain likely doesn't exist
+    
     if (err.code === 'ENOTFOUND' || err.code === 'ENODATA') {
       mxCache.set(domain, { hasMx: false, timestamp: Date.now() });
       return { valid: false, reason: 'Domain email tidak ditemukan. Periksa kembali alamat email Anda.' };
     }
 
-    // Timeout or other DNS errors - allow through but suggest checking
+    
     console.warn(`[EMAIL_VERIFY] DNS lookup error for ${domain}: ${err.code || err.message}`);
     return { valid: true, reason: 'Tidak dapat memverifikasi domain email. Pastikan email Anda benar.', warning: true };
   }
 };
 
-// ========== COMMON TYPO SUGGESTIONS ==========
 const DOMAIN_TYPOS = {
   'gmial.com': 'gmail.com',
   'gmal.com': 'gmail.com',

@@ -1,7 +1,4 @@
-// ============================================
-// PROFIL PAGE - Sistem Peminjaman Barang TVRI
-// Read-only profile (hanya bisa ubah foto profil)
-// ============================================
+
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -16,7 +13,7 @@ const Profil = () => {
   const fileInputRef = useRef(null);
   const [uploading, setUploading] = useState(false);
 
-  // Profile data (read-only)
+  
   const [profileForm, setProfileForm] = useState({
     nama: user?.nama || '',
     email: user?.email || '',
@@ -25,7 +22,7 @@ const Profil = () => {
     nomor_hp: user?.nomor_hp || '',
   });
 
-  // Avatar
+  
   const avatarSrc = user?.avatar ? getAvatarUrl(user.avatar) : null;
   const [avatarError, setAvatarError] = useState(false);
   const [avatarBust, setAvatarBust] = useState(Date.now());
@@ -33,7 +30,7 @@ const Profil = () => {
 
   useEffect(() => { setAvatarError(false); }, [user?.avatar]);
 
-  // Stats
+  
   const [stats, setStats] = useState({
     totalPeminjaman: 0,
     aktif: 0,
@@ -52,12 +49,13 @@ const Profil = () => {
           aktif: d.barangDipinjam || 0,
           selesai: d.pengembalianHariIni || 0,
         });
-      } catch { /* keep defaults */ }
+      } catch { 
+ }
     };
     fetchStats();
   }, []);
 
-  // Sync user data when user changes
+  
   useEffect(() => {
     if (user) {
       setProfileForm(prev => ({
@@ -109,10 +107,10 @@ const Profil = () => {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Role label
+  
   const roleLabel = user?.role === 'super_admin' ? 'Super Admin' : user?.role === 'admin' ? 'Administrator' : user?.role || 'Operator';
 
-  // Profile info items for read-only display
+  
   const profileInfoItems = [
     { label: 'Nama Lengkap', value: profileForm.nama || '-', icon: FiUser },
     { label: 'Email', value: profileForm.email || '-', icon: FiMail },
@@ -129,12 +127,15 @@ const Profil = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
-        {/* Profile Card - Sidebar */}
+        {
+}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="lg:col-span-1">
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {/* Avatar & Name */}
+            {
+}
             <div className="bg-gradient-to-br from-[#005BAC] to-[#003B71] px-6 pt-10 pb-8 text-center">
-              {/* Clickable Avatar */}
+              {
+}
               <div className="relative inline-block group cursor-pointer mb-5" onClick={handleAvatarClick}>
                 <div className="w-28 h-28 rounded-3xl overflow-hidden bg-white/20 backdrop-blur-sm flex items-center justify-center ring-4 ring-white/30 shadow-xl">
                   {avatarUrl && !avatarError ? (
@@ -143,7 +144,8 @@ const Profil = () => {
                     <span className="text-white text-3xl font-bold">{getInitials(profileForm.nama)}</span>
                   )}
                 </div>
-                {/* Camera Overlay */}
+                {
+}
                 <div className="absolute inset-0 rounded-3xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center ring-4 ring-white/30">
                   {uploading ? (
                     <div className="animate-spin rounded-full h-7 w-7 border-2 border-white border-t-transparent" />
@@ -163,7 +165,8 @@ const Profil = () => {
               </span>
             </div>
 
-            {/* Quick Stats */}
+            {
+}
             <div className="p-4">
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="p-2 rounded-xl bg-gray-50">
@@ -183,7 +186,8 @@ const Profil = () => {
           </div>
         </motion.div>
 
-        {/* Main Content - Read-only Profile */}
+        {
+}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="lg:col-span-3">
           <div className="bg-white rounded-2xl shadow-sm">
             <div className="px-6 py-4 border-b border-gray-100">

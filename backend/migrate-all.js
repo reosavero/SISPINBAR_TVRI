@@ -1,13 +1,4 @@
-// ============================================
-// MIGRATE ALL - SISPINBAR Database Setup
-// Menjalankan schema.sql + seed super admin
-// AMAN dijalankan berulang kali (idempotent)
-//
-// Cara menjalankan:
-//   npm run migrate
-//   ATAU
-//   node migrate-all.js
-// ============================================
+
 
 const mysql = require('mysql2/promise');
 const fs = require('fs');
@@ -33,18 +24,18 @@ async function migrate() {
 
   let connection;
   try {
-    // 1. Connect to MySQL (tanpa database dulu untuk create DB)
+    
     console.log('  📡 Connecting to MySQL...');
     connection = await mysql.createConnection(DB_CONFIG);
     console.log('  ✅ Connected to MySQL');
 
-    // 2. Create database if not exists
+    
     console.log(`  📦 Ensuring database "${DB_NAME}" exists...`);
     await connection.query(`CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await connection.query(`USE \`${DB_NAME}\``);
     console.log('  ✅ Database ready');
 
-    // 3. Check if tables already exist (skip if fresh install)
+    
     const [tables] = await connection.query('SHOW TABLES');
     const tableNames = tables.map(t => Object.values(t)[0]);
     const isFreshInstall = !tableNames.includes('users');
@@ -55,23 +46,23 @@ async function migrate() {
       console.log('  🔄 Existing database detected — checking schema integrity...');
     }
 
-    // 4. Run schema.sql (CREATE TABLE IF NOT EXISTS — idempotent)
+    
     console.log('  📄 Running schema.sql...');
     const schemaPath = path.join(__dirname, 'database', 'schema.sql');
     const schemaSQL = fs.readFileSync(schemaPath, 'utf8');
-    // Run entire schema with multipleStatements enabled
+    
     try {
       await connection.query(schemaSQL);
       console.log('  ✅ Schema applied');
     } catch (err) {
-      // If multipleStatements fails, try running individual CREATE TABLE statements
+      
       console.log('  ⚠️  Full schema failed, running individual statements...');
       const tableStatements = [
         'CREATE DATABASE IF NOT EXISTS `' + DB_NAME + '`',
         'USE `' + DB_NAME + '`',
       ];
       
-      // Extract CREATE TABLE blocks
+      
       const createTableRegex = /CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+[\s\S]*?\)\s*ENGINE/gi;
       const matches = schemaSQL.match(createTableRegex) || [];
       for (const stmt of matches) {
@@ -82,40 +73,41 @@ async function migrate() {
         }
       }
       
-      // Extract INSERT IGNORE/ON DUPLICATE statements
+      
       const insertRegex = /INSERT[\s\S]*?;(?=\s*(?:SELECT|INSERT|$))/gi;
       const insertMatches = schemaSQL.match(insertRegex) || [];
       for (const stmt of insertMatches) {
         try {
           await connection.query(stmt.replace(/;$/, ''));
-        } catch (e) { /* ignore */ }
+        } catch (e) { 
+ }
       }
       
-      // Run the final SELECT
+      
       console.log('  ✅ Schema applied (individual statements)');
     }
 
-    // 5. Ensure all columns exist (idempotent ALTER TABLE for upgrades from old schema)
+    
     const alterStatements = [
-      // v6: is_active, deleted_at (already in schema, but ensure for upgrades)
+      
       { table: 'users', column: 'is_active', check: 'TINYINT(1)', sql: "ALTER TABLE users ADD COLUMN is_active TINYINT(1) DEFAULT 1 AFTER role" },
       { table: 'users', column: 'deleted_at', check: 'datetime', sql: "ALTER TABLE users ADD COLUMN deleted_at DATETIME NULL AFTER is_active" },
-      // v9: login_attempts, locked_until
+      
       { table: 'users', column: 'login_attempts', check: 'int', sql: "ALTER TABLE users ADD COLUMN login_attempts INT DEFAULT 0 COMMENT 'Jumlah percobaan login gagal'" },
       { table: 'users', column: 'locked_until', check: 'datetime', sql: "ALTER TABLE users ADD COLUMN locked_until DATETIME NULL COMMENT 'Waktu sampai akun terkunci'" },
-      // v11: registration_status, rejection_reason
+      
       { table: 'users', column: 'registration_status', check: 'enum', sql: "ALTER TABLE users ADD COLUMN registration_status ENUM('pending','approved','rejected') DEFAULT 'approved' AFTER is_active" },
       { table: 'users', column: 'rejection_reason', check: 'text', sql: "ALTER TABLE users ADD COLUMN rejection_reason TEXT NULL AFTER registration_status" },
-      // v14: nip, jabatan, divisi, nomor_hp (merge pegawai)
+      
       { table: 'users', column: 'nip', check: 'varchar', sql: "ALTER TABLE users ADD COLUMN nip VARCHAR(20) DEFAULT NULL AFTER nama" },
       { table: 'users', column: 'jabatan', check: 'varchar', sql: "ALTER TABLE users ADD COLUMN jabatan VARCHAR(100) DEFAULT NULL AFTER nip" },
       { table: 'users', column: 'divisi', check: 'varchar', sql: "ALTER TABLE users ADD COLUMN divisi VARCHAR(100) DEFAULT NULL AFTER jabatan" },
       { table: 'users', column: 'nomor_hp', check: 'varchar', sql: "ALTER TABLE users ADD COLUMN nomor_hp VARCHAR(20) DEFAULT NULL AFTER divisi" },
-      // v7: lokasi_id on barang
+      
       { table: 'barang', column: 'lokasi_id', check: 'int', sql: "ALTER TABLE barang ADD COLUMN lokasi_id INT DEFAULT NULL AFTER kategori_id" },
-      // v8: catatan_admin on pengembalian
+      
       { table: 'pengembalian', column: 'catatan_admin', check: 'text', sql: "ALTER TABLE pengembalian ADD COLUMN catatan_admin TEXT NULL AFTER catatan" },
-      // v5: foto on peminjaman
+      
       { table: 'peminjaman', column: 'foto', check: 'varchar', sql: "ALTER TABLE peminjaman ADD COLUMN foto VARCHAR(255) DEFAULT NULL AFTER keperluan" },
     ];
 
@@ -130,14 +122,14 @@ async function migrate() {
           console.log(`  ✅ Added column ${alter.table}.${alter.column}`);
         }
       } catch (err) {
-        // Column might already exist or table doesn't exist yet
+        
         if (err.code !== 'ER_DUP_FIELDNAME') {
           console.log(`  ⚠️  ${alter.table}.${alter.column}: ${err.message}`);
         }
       }
     }
 
-    // 6. Ensure all indexes exist (idempotent)
+    
     const indexStatements = [
       { name: 'idx_role', table: 'users', sql: 'ALTER TABLE users ADD INDEX idx_role (role)' },
       { name: 'idx_is_active', table: 'users', sql: 'ALTER TABLE users ADD INDEX idx_is_active (is_active)' },
@@ -164,7 +156,7 @@ async function migrate() {
       }
     }
 
-    // 7. Ensure unique indexes exist (v10, v15, v16)
+    
     const uniqueIndexes = [
       { name: 'uk_kategori_nama', table: 'kategori', sql: 'ALTER TABLE kategori ADD UNIQUE INDEX uk_kategori_nama (nama)' },
       { name: 'uk_lokasi_nama_lokasi', table: 'lokasi', sql: 'ALTER TABLE lokasi ADD UNIQUE INDEX uk_lokasi_nama_lokasi (nama_lokasi)' },
@@ -189,7 +181,7 @@ async function migrate() {
       }
     }
 
-    // 8. Update ENUM values (idempotent)
+    
     try {
       await connection.query("ALTER TABLE users MODIFY COLUMN role ENUM('super_admin','admin','pegawai') DEFAULT 'pegawai'");
       await connection.query("ALTER TABLE pengembalian MODIFY COLUMN status ENUM('Menunggu Konfirmasi','Diterima','Ditolak') DEFAULT 'Menunggu Konfirmasi'");
@@ -198,26 +190,27 @@ async function migrate() {
       console.log(`  ⚠️  ENUM update: ${err.message}`);
     }
 
-    // 9. Update pegawai_id FK (v14: reference users instead of pegawai table)
+    
     try {
-      // Check if old FK exists
+      
       const [oldFK] = await connection.query(
         `SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'peminjaman' AND CONSTRAINT_TYPE = 'FOREIGN KEY'`,
         [DB_NAME]
       );
 
-      // Drop old FK if exists
+      
       for (const fk of oldFK) {
         try {
           await connection.query(`ALTER TABLE peminjaman DROP FOREIGN KEY ${fk.CONSTRAINT_NAME}`);
           console.log(`  ✅ Dropped old FK: ${fk.CONSTRAINT_NAME}`);
-        } catch (e) { /* ignore */ }
+        } catch (e) { 
+ }
       }
 
-      // Make pegawai_id nullable
+      
       await connection.query('ALTER TABLE peminjaman MODIFY COLUMN pegawai_id INT DEFAULT NULL');
 
-      // Add new FK
+      
       try {
         await connection.query('ALTER TABLE peminjaman ADD CONSTRAINT fk_peminjaman_user FOREIGN KEY (pegawai_id) REFERENCES users(id) ON DELETE SET NULL');
         console.log('  ✅ Added FK: pegawai_id → users.id');
@@ -230,7 +223,7 @@ async function migrate() {
       console.log(`  ⚠️  FK migration: ${err.message}`);
     }
 
-    // 10. Drop old pegawai table if exists (v14)
+    
     try {
       await connection.query('DROP TABLE IF EXISTS pegawai');
       console.log('  ✅ Dropped old pegawai table (if existed)');
@@ -238,7 +231,7 @@ async function migrate() {
       console.log(`  ⚠️  Drop pegawai: ${err.message}`);
     }
 
-    // 11. Update existing roles (v6: old roles → new roles)
+    
     try {
       await connection.query("UPDATE users SET role = 'pegawai' WHERE role IN ('operator', 'viewer', '')");
       await connection.query("UPDATE users SET role = 'pegawai' WHERE role IS NULL");
@@ -249,7 +242,7 @@ async function migrate() {
       console.log(`  ⚠️  Data migration: ${err.message}`);
     }
 
-    // 12. Migrate pegawai data to users if old table still has data
+    
     try {
       const [pegawaiCols] = await connection.query(
         `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'nip'`,
@@ -257,7 +250,7 @@ async function migrate() {
       );
 
       if (pegawaiCols.length > 0) {
-        // Try to update users with pegawai data if pegawai table exists
+        
         const [pegawaiTable] = await connection.query(
           `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'pegawai'`,
           [DB_NAME]
@@ -281,7 +274,7 @@ async function migrate() {
       console.log(`  ⚠️  Pegawai data migration: ${err.message}`);
     }
 
-    // 13. Seed super admin account (idempotent)
+    
     console.log('  👤 Seeding super admin account...');
     const superAdminPassword = await bcrypt.hash('superadmin123', 10);
     try {
@@ -303,7 +296,7 @@ async function migrate() {
       console.log(`  ⚠️  Super admin: ${err.message}`);
     }
 
-    // 14. Seed admin account (idempotent)
+    
     console.log('  👤 Seeding admin account...');
     const adminPassword = await bcrypt.hash('admin123', 10);
     try {
@@ -325,7 +318,7 @@ async function migrate() {
       console.log(`  ⚠️  Admin: ${err.message}`);
     }
 
-    // 15. Remove default_password setting (no longer used)
+    
     try {
       await connection.query("DELETE FROM system_settings WHERE setting_key = 'default_password'");
       console.log('  ✅ Removed default_password setting (no longer used)');
@@ -333,7 +326,7 @@ async function migrate() {
       console.log(`  ⚠️  Remove default_password: ${err.message}`);
     }
 
-    // 16. Final verification
+    
     console.log('');
     console.log('  📊 Verifying tables...');
     const [finalTables] = await connection.query('SHOW TABLES');
@@ -350,7 +343,7 @@ async function migrate() {
       }
     }
 
-    // Count users
+    
     const [userCount] = await connection.query('SELECT COUNT(*) as count FROM users');
     console.log(`  📊 Total users: ${userCount[0].count}`);
 

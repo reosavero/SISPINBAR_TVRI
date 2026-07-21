@@ -1,8 +1,4 @@
-// ============================================
-// SIDEBAR COMPONENT - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System (3 roles)
-// Mobile-Responsive Drawer Sidebar
-// ============================================
+
 
 import { useState, useEffect } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
@@ -48,7 +44,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const [imgError, setImgError] = useState(false);
 
-  // Pilih menu berdasarkan role
+  
   const getSidebarMenu = () => {
     if (isSuperAdmin) return SIDEBAR_MENU_SUPER_ADMIN;
     if (isAdmin) return SIDEBAR_MENU_ADMIN;
@@ -56,24 +52,24 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
   const sidebarMenu = getSidebarMenu();
 
-  // Get role color scheme
+  
   const roleColor = ROLE_COLORS[user?.role] || ROLE_COLORS.pegawai;
   const roleLabel = ROLE_LABELS[user?.role] || roleName;
 
-  // Compute avatar URL directly from user context
+  
   const avatarSrc = user?.avatar ? getAvatarUrl(user.avatar) : null;
 
-  // Reset imgError when avatar changes
+  
   useEffect(() => {
     setImgError(false);
   }, [user?.avatar]);
 
-  // Close sidebar on route change (mobile)
+  
   useEffect(() => {
     onClose?.();
-  }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [location.pathname]); 
 
-  // Prevent body scroll when sidebar is open on mobile
+  
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -106,7 +102,8 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <>
-      {/* Mobile overlay */}
+      {
+}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
@@ -125,7 +122,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           shadow-xl lg:shadow-none
         `}
       >
-        {/* Logo */}
+        {
+}
         <div className="p-4 sm:p-5 pb-4 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -139,7 +137,8 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <p className="text-[10px] text-gray-400">{APP_FULL_NAME}</p>
               </div>
             </div>
-            {/* Close button - mobile only */}
+            {
+}
             <button
               onClick={onClose}
               className="lg:hidden p-2 hover:bg-gray-100 active:bg-gray-200 rounded-lg transition-colors touch-manipulation"
@@ -150,7 +149,8 @@ const Sidebar = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Navigation */}
+        {
+}
         <nav className="flex-1 px-3 sm:px-4 py-4 overflow-y-auto scrollbar-hide">
           <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider px-3 mb-3">Menu Utama</p>
           <ul className="space-y-1">
@@ -178,9 +178,11 @@ const Sidebar = ({ isOpen, onClose }) => {
           </ul>
         </nav>
 
-        {/* Footer */}
+        {
+}
         <div className="p-3 sm:p-4 border-t border-gray-100">
-          {/* Profil Button */}
+          {
+}
           <button
             onClick={handleProfileClick}
             className="flex items-center gap-2.5 w-full p-2 sm:p-2 rounded-xl hover:bg-gray-50 active:bg-gray-100 transition-all duration-200 touch-manipulation"
@@ -200,7 +202,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-semibold text-gray-800 truncate">{user?.nama || 'User'}</p>
-              {/* Role Badge */}
+              {
+}
               <span className={`inline-flex items-center gap-1 mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-semibold ${roleColor.bg} ${roleColor.text} border ${roleColor.border}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${roleColor.dot}`}></span>
                 {roleLabel}
@@ -208,7 +211,8 @@ const Sidebar = ({ isOpen, onClose }) => {
             </div>
           </button>
 
-          {/* Keluar Button */}
+          {
+}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 px-3 py-3 sm:py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-600 active:bg-red-100 transition-all duration-200 w-full mt-1 touch-manipulation"

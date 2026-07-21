@@ -1,13 +1,9 @@
-# ============================================
-# .gitignore - SISPINBAR TVRI Jawa Timur
-# ============================================
-
 # Dependencies
 node_modules/
 dist/
 build/
 
-# Environment (SENSITIVE: contains DB credentials, JWT secret, SMTP password)
+# Environment (SENSITIVE: DB credentials, JWT secret, SMTP password)
 .env
 .env.local
 .env.production
@@ -60,7 +56,8 @@ backend/uploads/**/*.pdf
 !backend/uploads/**/.gitkeep
 !backend/uploads/.gitkeep
 
-# Artifacts
+# NUL files (Windows redirect output)
+nul
 backend/nul
 *.nul
 

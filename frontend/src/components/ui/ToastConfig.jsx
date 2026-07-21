@@ -1,6 +1,4 @@
-// ============================================
-// TOAST NOTIFICATION COMPONENT
-// ============================================
+
 
 import { Toaster } from 'react-hot-toast';
 

@@ -1,6 +1,4 @@
-// ============================================
-// DATABASE CONFIG - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const mysql = require('mysql2/promise');
 
@@ -17,12 +15,9 @@ const pool = mysql.createPool({
   timezone: '+07:00',
 });
 
-// Pool connects lazily on first query — no eager getConnection needed.
-// Connection errors surface naturally on first query if DB is unreachable.
-
-// Graceful shutdown helper for scripts/tests
 const closePool = async () => {
-  try { await pool.end(); } catch (e) { /* ignore */ }
+  try { await pool.end(); } catch (e) { 
+ }
 };
 
 module.exports = pool;

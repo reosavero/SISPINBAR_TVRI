@@ -1,9 +1,4 @@
-// ============================================
-// KATEGORI USER PAGE - Sistem Peminjaman Barang TVRI
-// Kelola Lokasi, Jabatan, dan Divisi untuk data diri pegawai
-// Pattern: Overview cards → Detail view → Pegawai list (for jabatan/divisi)
-// Akses: Super Admin & Admin only
-// ============================================
+
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -26,7 +21,6 @@ import { useMasterData } from '../../context/MasterDataContext';
 import { getInitials, getAvatarUrl } from '../../utils/format';
 import toast from 'react-hot-toast';
 
-// Category definitions
 const KATEGORI_USER_ITEMS = [
   {
     key: 'lokasi',
@@ -60,7 +54,6 @@ const KATEGORI_USER_ITEMS = [
   },
 ];
 
-// Helper: safely extract array data from API responses
 const extractList = (res) => {
   if (!res) return [];
   if (Array.isArray(res.data)) return res.data;
@@ -77,29 +70,29 @@ const extractTotal = (res) => {
 };
 
 const KategoriUser = () => {
-  // ========== STATE ==========
+  
   const { refreshMasterData } = useMasterData();
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Overview data
+  
   const [lokasiData, setLokasiData] = useState({ items: [], total: 0 });
   const [jabatanData, setJabatanData] = useState({ items: [], total: 0 });
   const [divisiData, setDivisiData] = useState({ items: [], total: 0 });
 
-  // Detail view
+  
   const [selectedKategori, setSelectedKategori] = useState(null);
   const [detailItems, setDetailItems] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailSearch, setDetailSearch] = useState('');
 
-  // Pegawai detail for jabatan/divisi
-  const [selectedItem, setSelectedItem] = useState(null); // { id, nama, type: 'jabatan'|'divisi' }
+  
+  const [selectedItem, setSelectedItem] = useState(null); 
   const [pegawaiList, setPegawaiList] = useState([]);
   const [pegawaiLoading, setPegawaiLoading] = useState(false);
   const [pegawaiTotal, setPegawaiTotal] = useState(0);
 
-  // Modals
+  
   const [showModal, setShowModal] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [showAddCategory, setShowAddCategory] = useState(false);
@@ -108,7 +101,7 @@ const KategoriUser = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ nama: '', deskripsi: '', gedung: '', lantai: '', ruangan: '' });
 
-  // Avatar error tracking
+  
   const [imgErrors, setImgErrors] = useState(new Set());
 
   const handleAvatarError = (userId) => {
@@ -119,7 +112,7 @@ const KategoriUser = () => {
     });
   };
 
-  // ========== FETCH OVERVIEW ==========
+  
   const fetchOverview = useCallback(async () => {
     setLoading(true);
     try {
@@ -140,7 +133,7 @@ const KategoriUser = () => {
 
   useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
-  // ========== FETCH DETAIL ==========
+  
   const fetchDetail = useCallback(async () => {
     if (!selectedKategori) return;
     setDetailLoading(true);
@@ -166,14 +159,14 @@ const KategoriUser = () => {
     if (selectedKategori) fetchDetail();
   }, [selectedKategori, fetchDetail]);
 
-  // Refetch detail when search changes
+  
   useEffect(() => {
     if (!selectedKategori) return;
     const timer = setTimeout(() => fetchDetail(), 300);
     return () => clearTimeout(timer);
-  }, [detailSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [detailSearch]); 
 
-  // ========== FETCH PEGAWAI BY JABATAN/DIVISI ==========
+  
   const fetchPegawai = useCallback(async (type, value) => {
     setPegawaiLoading(true);
     try {
@@ -189,7 +182,7 @@ const KategoriUser = () => {
     setPegawaiLoading(false);
   }, []);
 
-  // ========== HANDLERS ==========
+  
   const getConfig = () => KATEGORI_USER_ITEMS.find(k => k.key === selectedKategori) || KATEGORI_USER_ITEMS[0];
 
   const handleCardClick = (key) => {
@@ -207,7 +200,7 @@ const KategoriUser = () => {
   };
 
   const handleItemCardClick = (item) => {
-    if (selectedKategori === 'lokasi') return; // Lokasi doesn't have pegawai view
+    if (selectedKategori === 'lokasi') return; 
     setSelectedItem({ id: item.id, nama: item.nama || item.nama_lokasi, type: selectedKategori });
     fetchPegawai(selectedKategori, item.nama || item.nama_lokasi);
   };
@@ -309,7 +302,7 @@ const KategoriUser = () => {
     }
   };
 
-  // ========== HELPERS ==========
+  
   const getItemNama = (item) => item?.nama || item?.nama_lokasi || '';
   const getItemActive = (item) => {
     if (!item) return true;
@@ -327,14 +320,14 @@ const KategoriUser = () => {
     return { items: [], total: 0 };
   };
 
-  // ========== FILTER FOR DETAIL ==========
+  
   const getFilteredList = () => {
     if (!detailSearch.trim()) return detailItems;
     const q = detailSearch.toLowerCase();
     return detailItems.filter(item => getItemNama(item).toLowerCase().includes(q));
   };
 
-  // ========== FILTER FOR OVERVIEW ==========
+  
   const getFilteredCards = () => {
     if (!search.trim()) return KATEGORI_USER_ITEMS;
     const q = search.toLowerCase();
@@ -343,16 +336,17 @@ const KategoriUser = () => {
     );
   };
 
-  // ============================================================
-  //  PEGAWAI DETAIL VIEW (saat jabatan/divisi card diklik)
-  // ============================================================
+  
+  
+  
   if (selectedItem) {
     const config = getConfig();
     const IconComp = config.icon;
 
     return (
       <div className="page-container">
-        {/* Back & Breadcrumb */}
+        {
+}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={handleBackToItems} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#005BAC]/30 text-[#005BAC] font-semibold text-sm transition-all duration-200 group">
             <FiArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
@@ -368,7 +362,8 @@ const KategoriUser = () => {
           </div>
         </div>
 
-        {/* Header */}
+        {
+}
         <div className={`rounded-2xl p-6 mb-6 ${config.bgColor}`}>
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
@@ -385,7 +380,8 @@ const KategoriUser = () => {
           </div>
         </div>
 
-        {/* Pegawai List */}
+        {
+}
         {pegawaiLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BAC]" />
@@ -399,7 +395,8 @@ const KategoriUser = () => {
           />
         ) : (
           <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {/* Desktop Table */}
+            {
+}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -473,7 +470,8 @@ const KategoriUser = () => {
               </table>
             </div>
 
-            {/* Mobile Cards */}
+            {
+}
             <div className="md:hidden p-3 space-y-3">
               {pegawaiList.map((p) => (
                 <div key={p.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -525,9 +523,9 @@ const KategoriUser = () => {
     );
   }
 
-  // ============================================================
-  //  DETAIL VIEW (saat salah satu kategori dipilih)
-  // ============================================================
+  
+  
+  
   if (selectedKategori) {
     const config = getConfig();
     const IconComp = config.icon;
@@ -536,7 +534,8 @@ const KategoriUser = () => {
 
     return (
       <div className="page-container">
-        {/* Back & Breadcrumb */}
+        {
+}
         <div className="flex items-center gap-3 mb-6">
           <button onClick={handleBackToList} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-gray-200 shadow-sm hover:shadow-md hover:border-[#005BAC]/30 text-[#005BAC] font-semibold text-sm transition-all duration-200 group">
             <FiArrowLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
@@ -550,7 +549,8 @@ const KategoriUser = () => {
           </div>
         </div>
 
-        {/* Category Header */}
+        {
+}
         <div className={`rounded-2xl p-6 mb-6 ${config.bgColor}`}>
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${config.color} flex items-center justify-center shadow-lg`}>
@@ -567,7 +567,8 @@ const KategoriUser = () => {
           </div>
         </div>
 
-        {/* Search & Add */}
+        {
+}
         <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative flex-1 max-w-md">
@@ -578,9 +579,8 @@ const KategoriUser = () => {
           </div>
         </div>
 
-
-
-        {/* Items Grid */}
+        {
+}
         {detailLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BAC]" />
@@ -651,7 +651,8 @@ const KategoriUser = () => {
                       </div>
                     </div>
 
-                    {/* Click hint for jabatan/divisi */}
+                    {
+}
                     {isClickable && (
                       <div className="mt-2 flex items-center justify-center gap-1 text-[10px] text-[#005BAC] opacity-0 group-hover:opacity-100 transition-opacity">
                         <FiUsers className="w-3 h-3" />
@@ -666,7 +667,8 @@ const KategoriUser = () => {
           </div>
         )}
 
-        {/* Add/Edit Modal */}
+        {
+}
         <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? `Edit ${config.labelSingular}` : `Tambah ${config.labelSingular}`}>
           <form onSubmit={handleSubmit}>
             <Input label={`Nama ${config.labelSingular}`} name="nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder={config.placeholder} required />
@@ -690,15 +692,16 @@ const KategoriUser = () => {
           </form>
         </Modal>
 
-        {/* Delete Confirm */}
+        {
+}
         <ConfirmDialog isOpen={showDelete} onClose={() => setShowDelete(false)} onConfirm={handleDelete} title={`Hapus ${config.labelSingular}`} message={`Apakah Anda yakin ingin menghapus "${getItemNama(deleteItem)}"? Tindakan ini tidak dapat dibatalkan.`} />
       </div>
     );
   }
 
-  // ============================================================
-  //  OVERVIEW LIST (sama seperti Kategori Barang)
-  // ============================================================
+  
+  
+  
   const filteredCards = getFilteredCards();
 
   return (
@@ -708,7 +711,8 @@ const KategoriUser = () => {
         <p className="page-subtitle">Kelola data referensi untuk data diri pegawai baru</p>
       </div>
 
-      {/* Search & Add */}
+      {
+}
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative flex-1 max-w-md">
@@ -719,7 +723,8 @@ const KategoriUser = () => {
         </div>
       </div>
 
-      {/* Category Cards */}
+      {
+}
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BAC]" />
@@ -760,7 +765,8 @@ const KategoriUser = () => {
         </div>
       )}
 
-      {/* Add Category Picker Modal */}
+      {
+}
       <Modal isOpen={showAddCategory} onClose={() => setShowAddCategory(false)} title="Pilih Kategori">
         <div className="space-y-3">
           {KATEGORI_USER_ITEMS.map((kat) => {

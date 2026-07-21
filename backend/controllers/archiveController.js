@@ -1,14 +1,11 @@
-// ============================================
-// ARCHIVE CONTROLLER - Sistem Peminjaman Barang TVRI
-// Arsip riwayat transaksi per bulan
-// ============================================
+
 
 const archiveService = require('../services/archiveService');
 const auditService = require('../services/auditService');
 
 const archiveController = {
 
-  // Get available archive years
+  
   getArchiveYears: async (req, res) => {
     try {
       const years = await archiveService.getArchiveYears();
@@ -19,7 +16,7 @@ const archiveController = {
     }
   },
 
-  // Get available months for a year
+  
   getArchiveMonths: async (req, res) => {
     try {
       const { year } = req.query;
@@ -34,7 +31,7 @@ const archiveController = {
     }
   },
 
-  // Get archived data for a specific month/year
+  
   getArchiveData: async (req, res) => {
     try {
       const { year, month, page = 1 } = req.query;
@@ -51,7 +48,7 @@ const archiveController = {
     }
   },
 
-  // Manual trigger to archive previous months
+  
   triggerArchive: async (req, res) => {
     try {
       const result = await archiveService.archivePreviousMonths();
@@ -72,7 +69,7 @@ const archiveController = {
     }
   },
 
-  // Export archived data to Excel
+  
   exportArchiveExcel: async (req, res) => {
     try {
       const { year, month } = req.query;

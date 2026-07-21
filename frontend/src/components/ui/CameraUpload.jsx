@@ -1,20 +1,4 @@
-// ============================================
-// CAMERA UPLOAD COMPONENT - Sistem Peminjaman Barang TVRI
-// ============================================
-// Reusable component for photo upload - CAMERA ONLY
-// Hanya bisa mengakses kamera langsung, BUKAN dari galeri.
-// Ini untuk memastikan akuntabilitas bukti foto peminjaman/pengembalian.
-//
-// Alur kerja:
-// 1. User klik area upload → langsung buka kamera
-// 2. Kamera terbuka via getUserMedia (desktop/tablet)
-//    atau fallback ke <input capture> (mobile)
-// 3. User ambil foto → preview ditampilkan
-// 4. User bisa ambil ulang foto jika perlu
-//
-// FIX: Black screen on retake — pastikan stream di-restart
-// dengan benar dan video.play() dipanggil setelah srcObject di-set.
-// ============================================
+
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { FiCamera, FiX, FiRefreshCw, FiCheck } from 'react-icons/fi';
@@ -37,7 +21,7 @@ export default function CameraUpload({
   const streamRef = useRef(null);
   const retryCountRef = useRef(0);
 
-  // Stop camera stream completely
+  
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => {
@@ -52,9 +36,9 @@ export default function CameraUpload({
     setStreamReady(false);
   }, []);
 
-  // Start camera stream via getUserMedia
+  
   const startCamera = useCallback(async () => {
-    // Stop any existing stream first
+    
     stopCamera();
     setStreamReady(false);
 
@@ -71,27 +55,27 @@ export default function CameraUpload({
       const video = videoRef.current;
       if (video) {
         video.srcObject = stream;
-        // Wait for video to be ready before playing
+        
         video.onloadedmetadata = () => {
           video.play().then(() => {
             setStreamReady(true);
             retryCountRef.current = 0;
           }).catch((err) => {
             console.error('Video play error:', err);
-            // Retry play after a short delay
+            
             setTimeout(() => {
               video.play().then(() => {
                 setStreamReady(true);
               }).catch(() => {
-                setStreamReady(true); // Still mark as ready even if play fails
+                setStreamReady(true); 
               });
             }, 200);
           });
         };
-        // Trigger loadedmetadata event
+        
         video.load();
       } else {
-        // Video ref not available yet, retry after a short delay
+        
         setTimeout(() => {
           const v = videoRef.current;
           if (v && streamRef.current) {
@@ -117,22 +101,22 @@ export default function CameraUpload({
     }
   }, [facingMode, stopCamera]);
 
-  // Open camera modal
+  
   const openCamera = useCallback(() => {
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
       setCapturedPreview(null);
       setStreamReady(false);
       setShowCamera(true);
     } else {
-      // Fallback for browsers without getUserMedia
+      
       cameraInputRef.current?.click();
     }
   }, []);
 
-  // Start camera when modal opens
+  
   useEffect(() => {
     if (showCamera) {
-      // Small delay to ensure video element is rendered in DOM
+      
       const timer = setTimeout(() => {
         startCamera();
       }, 150);
@@ -141,9 +125,9 @@ export default function CameraUpload({
       stopCamera();
       setCapturedPreview(null);
     }
-  }, [showCamera]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showCamera]); 
 
-  // Restart camera when facing mode changes
+  
   useEffect(() => {
     if (showCamera && streamRef.current) {
       const timer = setTimeout(() => {
@@ -151,16 +135,16 @@ export default function CameraUpload({
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [facingMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [facingMode]); 
 
-  // Cleanup on unmount
+  
   useEffect(() => {
     return () => {
       stopCamera();
     };
   }, [stopCamera]);
 
-  // Handle file from fallback <input capture>
+  
   const handleFallbackCapture = (e) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -173,13 +157,13 @@ export default function CameraUpload({
     e.target.value = '';
   };
 
-  // Capture photo from video stream
+  
   const capturePhoto = () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
-    // Use actual video dimensions
+    
     const vw = video.videoWidth || 1280;
     const vh = video.videoHeight || 720;
     canvas.width = vw;
@@ -203,30 +187,31 @@ export default function CameraUpload({
     );
   };
 
-  // Retake photo - restart the camera and go back to live view
+  
   const retakePhoto = useCallback(() => {
     setCapturedPreview(null);
-    // Stop current stream and restart camera
-    // This ensures a fresh stream and avoids black screen
+    
+    
     setTimeout(() => {
       startCamera();
     }, 100);
   }, [startCamera]);
 
-  // Confirm captured photo and close camera
+  
   const confirmPhoto = useCallback(() => {
     setShowCamera(false);
     stopCamera();
   }, [stopCamera]);
 
-  // Switch front/back camera
+  
   const handleSwitchCamera = useCallback(() => {
     setFacingMode((prev) => (prev === 'environment' ? 'user' : 'environment'));
   }, []);
 
   return (
     <>
-      {/* ===== Upload Area / Preview ===== */}
+      {
+}
       {!preview ? (
         <div
           onClick={openCamera}
@@ -271,7 +256,8 @@ export default function CameraUpload({
               Ambil Ulang Foto
             </button>
           </div>
-          {/* Badge: Camera-only indicator */}
+          {
+}
           <div className="absolute bottom-2 left-2 bg-[#005BAC] text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-md">
             <FiCamera className="w-3 h-3" />
             FOTO KAMERA
@@ -279,7 +265,8 @@ export default function CameraUpload({
         </div>
       )}
 
-      {/* Hidden fallback input for browsers without getUserMedia */}
+      {
+}
       <input
         ref={cameraInputRef}
         type="file"
@@ -289,10 +276,12 @@ export default function CameraUpload({
         className="hidden"
       />
 
-      {/* ===== Camera Modal (Fullscreen Overlay) ===== */}
+      {
+}
       {showCamera && (
         <div className="fixed inset-0 z-[100] bg-black flex flex-col">
-          {/* Camera Header */}
+          {
+}
           <div className="flex items-center justify-between px-4 py-3 bg-black/80 text-white z-10">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-red-500 flex items-center justify-center">
@@ -318,7 +307,8 @@ export default function CameraUpload({
             </button>
           </div>
 
-          {/* Camera View / Captured Preview */}
+          {
+}
           <div className="flex-1 relative flex items-center justify-center bg-black overflow-hidden">
             {!capturedPreview ? (
               <>
@@ -331,7 +321,8 @@ export default function CameraUpload({
                 />
                 <canvas ref={canvasRef} className="hidden" />
 
-                {/* Loading indicator */}
+                {
+}
                 {!streamReady && (
                   <div className="absolute inset-0 flex items-center justify-center bg-black/70">
                     <div className="text-center">
@@ -341,15 +332,18 @@ export default function CameraUpload({
                   </div>
                 )}
 
-                {/* Guide overlay */}
+                {
+}
                 {streamReady && (
                   <div className="absolute inset-0 pointer-events-none">
-                    {/* Corner brackets */}
+                    {
+}
                     <div className="absolute top-[15%] left-[10%] w-12 h-12 border-t-2 border-l-2 border-white/50 rounded-tl-lg" />
                     <div className="absolute top-[15%] right-[10%] w-12 h-12 border-t-2 border-r-2 border-white/50 rounded-tr-lg" />
                     <div className="absolute bottom-[20%] left-[10%] w-12 h-12 border-b-2 border-l-2 border-white/50 rounded-bl-lg" />
                     <div className="absolute bottom-[20%] right-[10%] w-12 h-12 border-b-2 border-r-2 border-white/50 rounded-br-lg" />
-                    {/* Center guide text */}
+                    {
+}
                     <div className="absolute bottom-[8%] left-0 right-0 text-center">
                       <p className="text-white/70 text-xs font-medium bg-black/40 inline-block px-3 py-1.5 rounded-lg backdrop-blur-sm">
                         Arahkan kamera ke barang sebagai bukti
@@ -365,7 +359,8 @@ export default function CameraUpload({
                   alt="Foto yang diambil"
                   className="w-full h-full object-contain"
                 />
-                {/* Confirmation overlay */}
+                {
+}
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent pt-8 pb-4 px-6">
                   <p className="text-white text-sm font-semibold text-center mb-3">
                     Foto sudah diambil. Gunakan foto ini?
@@ -393,11 +388,13 @@ export default function CameraUpload({
             )}
           </div>
 
-          {/* Camera Controls */}
+          {
+}
           {!capturedPreview && (
             <div className="bg-black/80 px-4 py-6">
               <div className="flex items-center justify-between max-w-md mx-auto">
-                {/* Switch camera button */}
+                {
+}
                 <button
                   type="button"
                   onClick={handleSwitchCamera}
@@ -408,7 +405,8 @@ export default function CameraUpload({
                   <FiRefreshCw className="w-5 h-5 text-white" />
                 </button>
 
-                {/* Capture button */}
+                {
+}
                 <button
                   type="button"
                   onClick={capturePhoto}
@@ -418,7 +416,8 @@ export default function CameraUpload({
                   <div className="w-[56px] h-[56px] rounded-full bg-[#005BAC] border-2 border-white/30" />
                 </button>
 
-                {/* Spacer to balance layout */}
+                {
+}
                 <div className="w-12 h-12" />
               </div>
               <p className="text-center text-white/50 text-xs mt-2">

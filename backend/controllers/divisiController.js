@@ -1,6 +1,4 @@
-// ============================================
-// DIVISI CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const divisiService = require('../services/divisiService');
 

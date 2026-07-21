@@ -1,13 +1,10 @@
-// ============================================
-// MANAJEMEN USER PAGE - Sistem Peminjaman Barang TVRI
-// Admin & Super Admin: Manage users & approve registrations
-// ============================================
+
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiShield, FiUserCheck, FiUserX, FiUsers, FiUser, FiChevronDown, FiLock, FiMail, FiPhone, FiClock, FiCheck, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiShield, FiUserCheck, FiUserX, FiUsers, FiUser, FiChevronDown, FiLock, FiMail, FiPhone, FiClock, FiCheck, FiCheckCircle, FiXCircle, FiUnlock } from 'react-icons/fi';
 import { MdAdminPanelSettings, MdPeople, MdPersonAdd } from 'react-icons/md';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -22,6 +19,7 @@ import { getInitials, getAvatarUrl } from '../../utils/format';
 import toast from 'react-hot-toast';
 import api from '../../services/api';
 import pegawaiService from '../../services/pegawaiService';
+import userService from '../../services/userService';
 
 const ManajemenUser = () => {
   const { user: currentUser } = useAuth();
@@ -39,14 +37,14 @@ const ManajemenUser = () => {
   const [stats, setStats] = useState(null);
   const itemsPerPage = 10;
 
-  // Modal states
+  
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Form state
+  
   const [form, setForm] = useState({
     username: '',
     email: '',
@@ -64,20 +62,25 @@ const ManajemenUser = () => {
     nomor_hp: '',
   });
 
-  // Edit user password toggle
+  
   const [editResetPassword, setEditResetPassword] = useState({ enabled: false, newPassword: '', confirmPassword: '' });
   const [showPassword, setShowPassword] = useState(false);
 
-  // Tambah Pegawai state
+  
   const [showPegawaiModal, setShowPegawaiModal] = useState(false);
   const [pegawaiSaving, setPegawaiSaving] = useState(false);
   const [imgErrors, setImgErrors] = useState(new Set());
+
+  
+  const isLocked = (user) => {
+    return user.locked_until && new Date(user.locked_until) > new Date();
+  };
   const [pegawaiForm, setPegawaiForm] = useState({
     nip: '', nama: '', jabatan: '', divisi: '', email: '', nomor_hp: '', username: '', password: '',
   });
 
-  // Multi-step add pegawai form
-  const [addStep, setAddStep] = useState(1); // 1=Data, 2=Verifikasi OTP, 3=Akun Login
+  
+  const [addStep, setAddStep] = useState(1); 
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
@@ -87,7 +90,7 @@ const ManajemenUser = () => {
   const [otpError, setOtpError] = useState('');
   const otpRefs = useRef([]);
 
-  // Pending registrations state
+  
   const [pendingUsers, setPendingUsers] = useState([]);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -106,7 +109,7 @@ const ManajemenUser = () => {
         setStats(res.data.data);
       }
     } catch (err) {
-      // silently fail
+      
     }
   };
 
@@ -117,7 +120,7 @@ const ManajemenUser = () => {
         setPendingUsers(res.data.data || []);
       }
     } catch (err) {
-      // silently fail
+      
     }
   };
 
@@ -229,7 +232,7 @@ const ManajemenUser = () => {
         nomor_hp: editForm.nomor_hp || null,
       };
 
-      // Password change
+      
       if (editResetPassword.enabled) {
         data.password = editResetPassword.newPassword;
       }
@@ -268,7 +271,19 @@ const ManajemenUser = () => {
     }
   };
 
-  // ===== TAMBAH PEGAWAI (Multi-Step with OTP) =====
+  const handleResetLock = async (userId, userName) => {
+    try {
+      const res = await userService.resetLock(userId);
+      toast.success(`Lock percobaan login ${userName} berhasil direset`);
+      fetchUsers();
+      fetchStats();
+      fetchPending();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mereset lock percobaan login');
+    }
+  };
+
+  
   const handleOpenAddPegawai = () => {
     setPegawaiForm({ nip: '', nama: '', jabatan: '', divisi: '', email: '', nomor_hp: '', username: '', password: '' });
     setAddStep(1);
@@ -282,7 +297,7 @@ const ManajemenUser = () => {
     setShowPegawaiModal(true);
   };
 
-  // ========== STEP VALIDATION ==========
+  
   const validatePegawaiStep1 = () => {
     if (!pegawaiForm.nama.trim()) { toast.error('Nama wajib diisi'); return false; }
     if (!pegawaiForm.nip.trim()) { toast.error('NIP wajib diisi'); return false; }
@@ -299,7 +314,7 @@ const ManajemenUser = () => {
     return true;
   };
 
-  // ========== OTP HANDLERS ==========
+  
   const handleSendOtpPegawai = async () => {
     if (!pegawaiForm.email.trim()) { toast.error('Email wajib diisi terlebih dahulu'); return; }
 
@@ -344,7 +359,7 @@ const ManajemenUser = () => {
     if (addStep === 1) {
       if (!validatePegawaiStep1()) return;
       setAddStep(2);
-      // Auto-send OTP when moving to step 2
+      
       if (!otpSent) {
         setTimeout(() => handleSendOtpPegawai(), 300);
       }
@@ -357,7 +372,7 @@ const ManajemenUser = () => {
   const handleAddPegawai = async (e) => {
     if (e) e.preventDefault();
 
-    // Final step validation
+    
     if (!validatePegawaiStep3()) return;
     if (!otpVerified) { toast.error('Email belum diverifikasi'); return; }
 
@@ -374,7 +389,7 @@ const ManajemenUser = () => {
     setPegawaiSaving(false);
   };
 
-  // ===== APPROVE / REJECT REGISTRATION =====
+  
   const handleApprove = async (userId) => {
     try {
       const res = await api.put(`/users/${userId}/approve`);
@@ -425,13 +440,15 @@ const ManajemenUser = () => {
 
   return (
     <div className="page-container">
-      {/* Header */}
+      {
+}
       <div className="mb-4 sm:mb-6">
         <h1 className="page-title">Manajemen User</h1>
         <p className="page-subtitle">Kelola akun Admin dan Pegawai dalam sistem</p>
       </div>
 
-      {/* Stats Cards */}
+      {
+}
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
@@ -494,8 +511,10 @@ const ManajemenUser = () => {
         </div>
       )}
 
-      {/* Tab Bar + Search + Action */}
-      {/* Pending Registrations Banner */}
+      {
+}
+      {
+}
       {pendingUsers.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
@@ -551,7 +570,8 @@ const ManajemenUser = () => {
 
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Tabs */}
+          {
+}
           <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
             {[
               { key: 'admin', label: 'Admin' },
@@ -597,9 +617,11 @@ const ManajemenUser = () => {
         </div>
       </div>
 
-      {/* User Table */}
+      {
+}
       <div className="table-container">
-        {/* Desktop Table */}
+        {
+}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -658,9 +680,19 @@ const ManajemenUser = () => {
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-1">
-                        {/* Don't show actions for super_admin */}
+                        {
+}
                         {user.role !== 'super_admin' && (
                           <>
+                            {isLocked(user) && (
+                              <button
+                                onClick={() => handleResetLock(user.id, user.nama)}
+                                className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors"
+                                title="Reset lock percobaan login"
+                              >
+                                <FiUnlock className="w-4 h-4" />
+                              </button>
+                            )}
                             <button onClick={() => handleOpenEdit(user)} className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors" title="Edit">
                               <FiEdit2 className="w-4 h-4" />
                             </button>
@@ -685,7 +717,8 @@ const ManajemenUser = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden p-3 space-y-3">
           {users.map((user) => {
             const rc = roleColor(user.role);
@@ -717,6 +750,15 @@ const ManajemenUser = () => {
                   </span>
                   {user.role !== 'super_admin' && (
                     <div className="flex items-center gap-1">
+                      {isLocked(user) && (
+                        <button
+                          onClick={() => handleResetLock(user.id, user.nama)}
+                          className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600 transition-colors touch-manipulation"
+                          title="Reset lock percobaan login"
+                        >
+                          <FiUnlock className="w-4 h-4" />
+                        </button>
+                      )}
                       <button onClick={() => handleOpenEdit(user)} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600 transition-colors touch-manipulation">
                         <FiEdit2 className="w-4 h-4" />
                       </button>
@@ -738,7 +780,8 @@ const ManajemenUser = () => {
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalItems} itemsPerPage={itemsPerPage} />
       </div>
 
-      {/* Add Admin Modal */}
+      {
+}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title="Tambah Admin" size="md">
         <form onSubmit={handleAddAdmin}>
           <div className="space-y-4">
@@ -779,10 +822,12 @@ const ManajemenUser = () => {
         </form>
       </Modal>
 
-      {/* Edit User Modal */}
+      {
+}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={`Edit ${selectedUser?.role === 'pegawai' ? 'Pegawai' : 'Admin'}`} size="lg">
         <form onSubmit={handleEdit}>
-          {/* Section: Akun Login */}
+          {
+}
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
@@ -838,7 +883,8 @@ const ManajemenUser = () => {
 
           <div className="border-t border-gray-200 my-5"></div>
 
-          {/* Section: Data User */}
+          {
+}
           <div className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -897,9 +943,8 @@ const ManajemenUser = () => {
         </form>
       </Modal>
 
-
-
-      {/* Delete Confirm */}
+      {
+}
       <ConfirmDialog
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -908,7 +953,8 @@ const ManajemenUser = () => {
         message={`Apakah Anda yakin ingin menghapus user "${selectedUser?.nama}"? Data pegawai terkait juga akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`}
       />
 
-      {/* Reject Registration Modal */}
+      {
+}
       <Modal isOpen={showRejectModal} onClose={() => setShowRejectModal(false)} title="Tolak Registrasi" size="sm">
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 rounded-xl p-3">
@@ -933,10 +979,12 @@ const ManajemenUser = () => {
         </div>
       </Modal>
 
-      {/* ========== TAMBAH PEGAWAI MODAL (Multi-Step with OTP) ========== */}
+      {
+}
       <Modal isOpen={showPegawaiModal} onClose={() => setShowPegawaiModal(false)} title="Tambah Pegawai Baru" size="lg">
         <div className="space-y-5">
-          {/* Step Indicator */}
+          {
+}
           <div className="flex items-center justify-center gap-2 mb-4">
             <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${addStep >= 2 ? 'bg-emerald-100 text-emerald-700' : 'bg-[#005BAC] text-white'}`}>
               {addStep > 1 && <FiCheckCircle className="w-3.5 h-3.5" />}
@@ -953,7 +1001,8 @@ const ManajemenUser = () => {
             </div>
           </div>
 
-          {/* ===== STEP 1: Data Pegawai ===== */}
+          {
+}
           {addStep === 1 && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
@@ -1011,7 +1060,8 @@ const ManajemenUser = () => {
             </div>
           )}
 
-          {/* ===== STEP 2: Verifikasi Email (OTP) ===== */}
+          {
+}
           {addStep === 2 && (
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -1126,7 +1176,8 @@ const ManajemenUser = () => {
             </div>
           )}
 
-          {/* ===== STEP 3: Akun Login ===== */}
+          {
+}
           {addStep === 3 && (
             <div className="space-y-4">
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">

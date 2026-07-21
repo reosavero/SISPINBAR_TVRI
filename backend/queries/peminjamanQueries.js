@@ -1,10 +1,8 @@
-// ============================================
-// PEMINJAMAN QUERIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const peminjamanQueries = {
-  // Note: getAll is built dynamically in peminjamanService.getAll()
-  // This static query is kept for reference/fallback
+  
+  
   getAll: `
     SELECT p.*, u.nama AS pegawai_nama, b.nama_barang AS barang_nama, b.kode_barang, b.foto AS barang_foto,
            k.nama AS kategori_nama

@@ -1,8 +1,4 @@
-// ============================================
-// LOKASI PAGE - Sistem Peminjaman Barang TVRI
-// Kelola Lokasi Barang — CRUD modern Data Table
-// Akses: Super Admin & Admin only
-// ============================================
+
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,7 +25,7 @@ const STATUS_CONFIG = {
 };
 
 const Lokasi = () => {
-  // Data state
+  
   const [lokasiList, setLokasiList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -40,10 +36,10 @@ const Lokasi = () => {
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
 
-  // Gedung list for filter (derived from data)
+  
   const [gedungOptions, setGedungOptions] = useState([]);
 
-  // Modal states
+  
   const [showModal, setShowModal] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
@@ -52,11 +48,11 @@ const Lokasi = () => {
   const [deleteItem, setDeleteItem] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Detail: barang list
+  
   const [detailBarang, setDetailBarang] = useState([]);
   const [detailBarangLoading, setDetailBarangLoading] = useState(false);
 
-  // Form state
+  
   const [form, setForm] = useState({
     nama_lokasi: '',
     gedung: '',
@@ -82,7 +78,7 @@ const Lokasi = () => {
       setTotalPages(res.pagination?.totalPages || 1);
       setTotalItems(res.pagination?.totalItems || 0);
 
-      // Extract unique gedung values for filter
+      
       if (res.data && res.data.length > 0) {
         const gedungs = [...new Set(res.data.map(l => l.gedung).filter(Boolean))];
         setGedungOptions(gedungs);
@@ -133,7 +129,7 @@ const Lokasi = () => {
       return;
     }
 
-    // Cek duplikat nama lokasi (client-side, case-insensitive)
+    
     const trimmedNama = form.nama_lokasi.trim();
     const duplicate = lokasiList.find(l => l.nama_lokasi.toLowerCase() === trimmedNama.toLowerCase());
     if (duplicate && (!editItem || duplicate.id !== editItem.id)) {
@@ -179,7 +175,7 @@ const Lokasi = () => {
     return parts.length > 0 ? parts.join(' • ') : '-';
   };
 
-  // ========== RENDER ==========
+  
   return (
     <div className="page-container">
       <div className="page-header">
@@ -187,7 +183,8 @@ const Lokasi = () => {
         <p className="page-subtitle">Kelola lokasi penyimpanan barang inventaris TVRI Jawa Timur</p>
       </div>
 
-      {/* Action Bar */}
+      {
+}
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-3 sm:mb-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-col sm:flex-row flex-1 gap-2 sm:gap-3 sm:items-center">
@@ -227,7 +224,8 @@ const Lokasi = () => {
         </div>
       </div>
 
-      {/* Desktop Table */}
+      {
+}
       <div className="table-container">
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full">
@@ -332,7 +330,8 @@ const Lokasi = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden mobile-cards">
           <div className="p-3 space-y-3">
             {loading ? (
@@ -387,7 +386,8 @@ const Lokasi = () => {
         <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} totalItems={totalItems} itemsPerPage={itemsPerPage} />
       </div>
 
-      {/* ========== ADD/EDIT MODAL ========== */}
+      {
+}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Lokasi' : 'Tambah Lokasi'} size="md">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -428,13 +428,15 @@ const Lokasi = () => {
         </form>
       </Modal>
 
-      {/* ========== DETAIL MODAL ========== */}
+      {
+}
       <Modal isOpen={showDetail} onClose={() => setShowDetail(false)} title="Detail Lokasi" size="lg">
         {detailItem && (() => {
           const statusCfg = STATUS_CONFIG[detailItem.status] || STATUS_CONFIG['Aktif'];
           return (
             <div className="space-y-6">
-              {/* Location Info */}
+              {
+}
               <div className="bg-gradient-to-r from-[#005BAC] to-[#003B71] rounded-xl p-5 text-white">
                 <div className="flex items-start justify-between">
                   <div>
@@ -456,7 +458,8 @@ const Lokasi = () => {
                 </div>
               </div>
 
-              {/* Stats Cards */}
+              {
+}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="bg-blue-50 rounded-xl p-3 text-center">
                   <p className="text-2xl font-bold text-blue-700">{detailItem.total_barang || 0}</p>
@@ -476,7 +479,8 @@ const Lokasi = () => {
                 </div>
               </div>
 
-              {/* Detail Info */}
+              {
+}
               <div className="grid grid-cols-2 gap-4">
                 <div><p className="text-xs text-gray-500">Gedung</p><p className="text-sm font-semibold">{detailItem.gedung || '-'}</p></div>
                 <div><p className="text-xs text-gray-500">Lantai</p><p className="text-sm font-semibold">{detailItem.lantai ? `Lantai ${detailItem.lantai}` : '-'}</p></div>
@@ -487,7 +491,8 @@ const Lokasi = () => {
                 <div><p className="text-xs text-gray-500">Deskripsi</p><p className="text-sm mt-1">{detailItem.deskripsi}</p></div>
               )}
 
-              {/* Barang List */}
+              {
+}
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-sm font-bold text-gray-800">Daftar Barang di Lokasi Ini</h3>
@@ -522,7 +527,8 @@ const Lokasi = () => {
         })()}
       </Modal>
 
-      {/* ========== DELETE CONFIRM ========== */}
+      {
+}
       <ConfirmDialog
         isOpen={showDelete}
         onClose={() => setShowDelete(false)}

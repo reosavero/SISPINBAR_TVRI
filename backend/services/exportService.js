@@ -1,9 +1,4 @@
-// ============================================
-// EXPORT SERVICE - Sistem Peminjaman Barang TVRI
-// Export laporan ke Excel
-// Menampilkan: nama barang, gambar barang,
-//   foto bukti peminjaman, foto bukti pengembalian
-// ============================================
+
 
 const ExcelJS = require('exceljs');
 const fs = require('fs');
@@ -11,18 +6,8 @@ const path = require('path');
 const pool = require('../config/db');
 const { formatDate, formatDateTime } = require('../utils/helpers');
 
-// Base directory for resolving image paths
 const UPLOADS_DIR = path.join(__dirname, '..', 'uploads');
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
-/**
- * Resolve URL path to local file path
- * @param {string|null} urlPath - URL path like /uploads/barang/filename.jpg
- * @returns {string|null} Local file path or null if not available
- */
 const resolveImagePath = (urlPath) => {
   if (!urlPath) return null;
   try {
@@ -32,16 +17,11 @@ const resolveImagePath = (urlPath) => {
       return localPath;
     }
   } catch (e) {
-    // Ignore errors
+    
   }
   return null;
 };
 
-/**
- * Get image buffer for embedding in documents
- * @param {string|null} urlPath - URL path like /uploads/barang/filename.jpg
- * @returns {Buffer|null} Image buffer or null
- */
 const getImageBuffer = (urlPath) => {
   const localPath = resolveImagePath(urlPath);
   if (!localPath) return null;
@@ -52,11 +32,6 @@ const getImageBuffer = (urlPath) => {
   }
 };
 
-/**
- * Get image extension from URL path
- * @param {string|null} urlPath - URL path
- * @returns {string} Extension string (e.g., 'jpeg', 'png')
- */
 const getImageExtension = (urlPath) => {
   if (!urlPath) return 'jpeg';
   const ext = path.extname(urlPath).toLowerCase().replace('.', '');
@@ -65,13 +40,9 @@ const getImageExtension = (urlPath) => {
   return 'jpeg';
 };
 
-// ==========================================
-// EXPORT PEMINJAMAN
-// ==========================================
-
 const exportService = {
 
-  // Ambil data peminjaman untuk export (termasuk foto)
+  
   getPeminjamanData: async (params = {}) => {
     let whereConditions = [];
     let queryParams = [];
@@ -122,7 +93,7 @@ const exportService = {
     return rows;
   },
 
-  // Export Peminjaman ke Excel (dengan gambar)
+  
   exportPeminjamanExcel: async (params = {}) => {
     const data = await exportService.getPeminjamanData(params);
 
@@ -134,7 +105,7 @@ const exportService = {
       properties: { defaultColWidth: 18 },
     });
 
-    // Header row styling
+    
     const headerStyle = {
       font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005BAC' } },
@@ -158,7 +129,7 @@ const exportService = {
       },
     };
 
-    // Title
+    
     sheet.mergeCells('A1:O1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = 'LAPORAN PEMINJAMAN BARANG - TVRI JAWA TIMUR';
@@ -172,7 +143,7 @@ const exportService = {
     dateCell.font = { size: 10, color: { argb: 'FF666666' } };
     dateCell.alignment = { horizontal: 'center' };
 
-    // Summary row
+    
     const totalPeminjaman = data.length;
     const menunggu = data.filter(d => d.status === 'Menunggu Persetujuan').length;
     const dipinjam = data.filter(d => d.status === 'Dipinjam' || d.status === 'Disetujui').length;
@@ -199,7 +170,7 @@ const exportService = {
     sheet.getCell('I3').value = dikembalikan;
     sheet.getCell('I3').font = { bold: true, size: 10, color: { argb: 'FF10B981' } };
 
-    // Headers (row 4)
+    
     const headers = [
       'No', 'Nomor Peminjaman', 'Pegawai', 'NIP', 'Divisi',
       'Barang', 'Kategori', 'Jumlah', 'Tgl Pinjam', 'Tgl Kembali Rencana',
@@ -215,17 +186,17 @@ const exportService = {
     });
     headerRow.height = 25;
 
-    // Image dimensions for Excel
+    
     const imgWidth = 100;
     const imgHeight = 75;
     const rowHeightForImage = 80;
 
-    // Data rows (starting row 5)
+    
     data.forEach((item, idx) => {
       const rowNumber = idx + 5;
       const row = sheet.getRow(rowNumber);
 
-      // Text data
+      
       const textData = [
         idx + 1,
         item.nomor_peminjaman || '-',
@@ -239,9 +210,9 @@ const exportService = {
         formatDate(item.tanggal_kembali_rencana),
         item.status || '-',
         item.keperluan || '-',
-        null, // Foto Barang (will be image)
-        null, // Foto Bukti Peminjaman (will be image)
-        null, // Foto Bukti Pengembalian (will be image)
+        null, 
+        null, 
+        null, 
       ];
 
       textData.forEach((val, colIdx) => {
@@ -254,7 +225,7 @@ const exportService = {
         }
       });
 
-      // Style status column
+      
       const statusCell = row.getCell(11);
       if (item.status) {
         const statusColors = {
@@ -270,14 +241,14 @@ const exportService = {
         }
       }
 
-      // Set row height for images
+      
       row.height = rowHeightForImage;
 
-      // Embed images - Peminjaman Excel
+      
       const imageFields = [
-        { url: item.barang_foto, col: 13 },           // Column M - Foto Barang
-        { url: item.foto_peminjaman || item.foto, col: 14 },  // Column N - Foto Bukti Peminjaman
-        { url: item.foto_pengembalian, col: 15 },      // Column O - Foto Bukti Pengembalian
+        { url: item.barang_foto, col: 13 },           
+        { url: item.foto_peminjaman || item.foto, col: 14 },  
+        { url: item.foto_pengembalian, col: 15 },      
       ];
 
       imageFields.forEach(({ url, col }) => {
@@ -295,14 +266,14 @@ const exportService = {
               ext: { width: imgWidth, height: imgHeight },
             });
           } catch (e) {
-            // If image embedding fails, add text placeholder
+            
             const cell = row.getCell(col);
             cell.value = 'Foto tidak tersedia';
             cell.font = { size: 8, color: { argb: 'FF9CA3AF' } };
             cell.alignment = { vertical: 'middle', horizontal: 'center' };
           }
         } else {
-          // No image - add text placeholder
+          
           const cell = row.getCell(col);
           cell.value = url ? '(File tidak ditemukan)' : '-';
           cell.font = { size: 8, color: { argb: 'FF9CA3AF' } };
@@ -311,7 +282,7 @@ const exportService = {
       });
     });
 
-    // Set column widths
+    
     const colWidths = [6, 20, 18, 15, 15, 22, 15, 8, 14, 16, 18, 25, 18, 20, 22];
     colWidths.forEach((w, i) => {
       sheet.getColumn(i + 1).width = w;
@@ -321,7 +292,7 @@ const exportService = {
     return Buffer.from(buffer);
   },
 
-  // ========== EXPORT BARANG ==========
+  
 
   exportBarangExcel: async (params = {}) => {
     let whereConditions = [];
@@ -360,7 +331,7 @@ const exportService = {
       properties: { defaultColWidth: 20 },
     });
 
-    // Title
+    
     sheet.mergeCells('A1:I1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = 'LAPORAN DATA BARANG - TVRI JAWA TIMUR';
@@ -394,11 +365,11 @@ const exportService = {
       row.getCell(6).value = item.kondisi;
       row.getCell(7).value = item.jumlah;
       row.getCell(8).value = Number(item.tersedia);
-      row.getCell(9).value = null; // Foto placeholder
+      row.getCell(9).value = null; 
 
       row.height = 80;
 
-      // Embed barang foto
+      
       const imgBuffer = getImageBuffer(item.foto);
       if (imgBuffer) {
         try {
@@ -429,9 +400,9 @@ const exportService = {
     return Buffer.from(buffer);
   },
 
-  // ========== EXPORT RIWAYAT ==========
+  
 
-  // Ambil data riwayat untuk export (termasuk foto)
+  
   getRiwayatData: async (params = {}) => {
     let whereConditions = [];
     let queryParams = [];
@@ -486,7 +457,7 @@ const exportService = {
     return rows;
   },
 
-  // Export Riwayat ke Excel (dengan gambar)
+  
   exportRiwayatExcel: async (params = {}) => {
     const data = await exportService.getRiwayatData(params);
 
@@ -498,7 +469,7 @@ const exportService = {
       properties: { defaultColWidth: 18 },
     });
 
-    // Header style
+    
     const headerStyle = {
       font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005BAC' } },
@@ -522,7 +493,7 @@ const exportService = {
       },
     };
 
-    // Title
+    
     sheet.mergeCells('A1:P1');
     const titleCell = sheet.getCell('A1');
     titleCell.value = 'LAPORAN RIWAYAT TRANSAKSI - TVRI JAWA TIMUR';
@@ -536,7 +507,7 @@ const exportService = {
     dateCell.font = { size: 10, color: { argb: 'FF666666' } };
     dateCell.alignment = { horizontal: 'center' };
 
-    // Summary row
+    
     const total = data.length;
     const dikembalikan = data.filter(d => d.status === 'Dikembalikan').length;
     const dipinjam = data.filter(d => d.status === 'Dipinjam' || d.status === 'Disetujui').length;
@@ -563,7 +534,7 @@ const exportService = {
     sheet.getCell('I3').value = ditolak;
     sheet.getCell('I3').font = { bold: true, size: 10, color: { argb: 'FFEF4444' } };
 
-    // Headers (row 4)
+    
     const headers = [
       'No', 'Nomor Peminjaman', 'Pegawai', 'NIP', 'Divisi',
       'Barang', 'Kategori', 'Jumlah', 'Tgl Pinjam', 'Tgl Kembali Rencana',
@@ -579,12 +550,12 @@ const exportService = {
     });
     headerRow.height = 25;
 
-    // Image dimensions
+    
     const imgWidth = 100;
     const imgHeight = 75;
     const rowHeightForImage = 80;
 
-    // Data rows
+    
     data.forEach((item, idx) => {
       const rowNumber = idx + 5;
       const row = sheet.getRow(rowNumber);
@@ -603,9 +574,9 @@ const exportService = {
         item.tanggal_kembali_aktual ? formatDate(item.tanggal_kembali_aktual) : '-',
         item.status || '-',
         item.keperluan || '-',
-        null, // Foto Barang
-        null, // Foto Bukti Peminjaman
-        null, // Foto Bukti Pengembalian
+        null, 
+        null, 
+        null, 
       ];
 
       textData.forEach((val, colIdx) => {
@@ -618,7 +589,7 @@ const exportService = {
         }
       });
 
-      // Style status column
+      
       const statusCell = row.getCell(12);
       if (item.status) {
         const statusColors = {
@@ -634,14 +605,14 @@ const exportService = {
         }
       }
 
-      // Set row height for images
+      
       row.height = rowHeightForImage;
 
-      // Embed images - Riwayat Excel
+      
       const imageFields = [
-        { url: item.barang_foto, col: 14 },              // Column N - Foto Barang
-        { url: item.foto_peminjaman || item.foto, col: 15 },    // Column O - Foto Bukti Peminjaman
-        { url: item.foto_pengembalian, col: 16 },         // Column P - Foto Bukti Pengembalian
+        { url: item.barang_foto, col: 14 },              
+        { url: item.foto_peminjaman || item.foto, col: 15 },    
+        { url: item.foto_pengembalian, col: 16 },         
       ];
 
       imageFields.forEach(({ url, col }) => {
@@ -673,7 +644,7 @@ const exportService = {
       });
     });
 
-    // Set column widths
+    
     const colWidths = [6, 20, 18, 15, 15, 22, 15, 8, 14, 16, 16, 18, 25, 18, 20, 22];
     colWidths.forEach((w, i) => {
       sheet.getColumn(i + 1).width = w;

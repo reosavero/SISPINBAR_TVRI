@@ -1,7 +1,4 @@
-// ============================================
-// PENGEMBALIAN SERVICE - Sistem Peminjaman Barang TVRI
-// Alur: Pegawai kembalikan → Menunggu Konfirmasi → Admin konfirmasi → Dikembalikan
-// ============================================
+
 
 const pool = require('../config/db');
 const pengembalianQueries = require('../queries/pengembalianQueries');
@@ -64,11 +61,11 @@ const pengembalianService = {
     };
   },
 
-  // Pegawai mengembalikan barang → status Menunggu Konfirmasi
+  
   create: async (data) => {
     const { peminjaman_id, kondisi_barang, catatan, foto } = data;
 
-    // Get peminjaman data
+    
     const [peminjamanRows] = await pool.execute(
       'SELECT * FROM peminjaman WHERE id = ?',
       [peminjaman_id]
@@ -80,7 +77,7 @@ const pengembalianService = {
 
     const peminjaman = peminjamanRows[0];
 
-    // Validate peminjaman status
+    
     if (peminjaman.status !== 'Dipinjam' && peminjaman.status !== 'Disetujui') {
       if (peminjaman.status === 'Menunggu Persetujuan') {
         throw new Error('Peminjaman ini masih menunggu persetujuan admin dan belum dapat dikembalikan');
@@ -94,7 +91,7 @@ const pengembalianService = {
       throw new Error(`Peminjaman ini tidak dapat dikembalikan karena statusnya "${peminjaman.status}"`);
     }
 
-    // Check if there's an active (non-rejected) return already
+    
     const [existingReturn] = await pool.execute(
       "SELECT id, status FROM pengembalian WHERE peminjaman_id = ? AND status IN ('Menunggu Konfirmasi', 'Diterima')",
       [peminjaman_id]
@@ -108,18 +105,18 @@ const pengembalianService = {
 
     const tanggal_kembali_aktual = getWIBDateTime();
 
-    // Create pengembalian record with status Menunggu Konfirmasi
+    
     const [result] = await pool.execute(pengembalianQueries.create, [
       peminjaman_id, tanggal_kembali_aktual, kondisi_barang || 'Baik', catatan || null, foto || null,
     ]);
 
-    // Update peminjaman status to Menunggu Konfirmasi (NOT Dikembalikan yet)
+    
     await pool.execute(pengembalianQueries.updatePeminjamanStatus, [peminjaman_id]);
 
-    // Fetch the created pengembalian with related data
+    
     const [newRows] = await pool.execute(pengembalianQueries.getById, [result.insertId]);
 
-    // Send notification to admins about the return
+    
     try {
       const pengembalianData = newRows[0] || {};
       await notificationService.create({
@@ -137,9 +134,9 @@ const pengembalianService = {
     return newRows[0] || { id: result.insertId, peminjaman_id, ...data };
   },
 
-  // Admin mengkonfirmasi barang telah diterima
+  
   confirm: async (id, user) => {
-    // Get pengembalian data with related peminjaman info (includes pegawai_id, barang_id)
+    
     const [rows] = await pool.execute(pengembalianQueries.getById, [id]);
     if (!rows[0]) {
       throw new Error('Data pengembalian tidak ditemukan');
@@ -151,29 +148,29 @@ const pengembalianService = {
       throw new Error('Pengembalian ini sudah dikonfirmasi sebelumnya');
     }
 
-    // Resolve barang_id from joined peminjaman data
+    
     const barangId = pengembalian.barang_id;
     if (!barangId) {
       throw new Error('Data barang terkait tidak ditemukan');
     }
 
-    // Resolve pegawai_id from joined peminjaman data
+    
     const pegawaiId = pengembalian.pegawai_id;
 
-    // Update pengembalian status to Diterima
+    
     await pool.execute(pengembalianQueries.confirmPengembalian, [id]);
 
-    // Update peminjaman status to Dikembalikan
+    
     await pool.execute(pengembalianQueries.confirmPeminjamanStatus, [pengembalian.peminjaman_id]);
 
-    // Update barang status
+    
     if (pengembalian.kondisi_barang === 'Rusak Berat') {
       await pool.execute('UPDATE barang SET status = ? WHERE id = ?', ['Rusak', barangId]);
     } else {
       await updateBarangStatus(barangId);
     }
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -184,7 +181,7 @@ const pengembalianService = {
       ipAddress: user?.ip,
     });
 
-    // Notification to pegawai that return is confirmed
+    
     if (pegawaiId) {
       try {
         await notificationService.create({
@@ -200,12 +197,12 @@ const pengembalianService = {
       }
     }
 
-    // Fetch updated data
+    
     const [updatedRows] = await pool.execute(pengembalianQueries.getById, [id]);
     return updatedRows[0] || pengembalian;
   },
 
-  // Get detail pengembalian by ID
+  
   getById: async (id) => {
     const [rows] = await pool.execute(pengembalianQueries.getById, [id]);
     if (!rows[0]) {
@@ -214,9 +211,9 @@ const pengembalianService = {
     return rows[0];
   },
 
-  // Admin menolak pengembalian
+  
   reject: async (id, catatan_admin, user) => {
-    // Get pengembalian data
+    
     const [rows] = await pool.execute(pengembalianQueries.getById, [id]);
     if (!rows[0]) {
       throw new Error('Data pengembalian tidak ditemukan');
@@ -231,13 +228,13 @@ const pengembalianService = {
       throw new Error('Pengembalian ini sudah ditolak sebelumnya');
     }
 
-    // Update pengembalian status to Ditolak
+    
     await pool.execute(pengembalianQueries.rejectPengembalian, [catatan_admin || null, id]);
 
-    // Revert peminjaman status back to Dipinjam
+    
     await pool.execute(pengembalianQueries.revertPeminjamanStatus, [pengembalian.peminjaman_id]);
 
-    // Audit log
+    
     await auditService.log({
       userId: user?.id,
       username: user?.username,
@@ -252,7 +249,7 @@ const pengembalianService = {
       ipAddress: user?.ip,
     });
 
-    // Notification to pegawai that return was rejected
+    
     if (pengembalian.pegawai_id) {
       try {
         await notificationService.create({
@@ -268,12 +265,12 @@ const pengembalianService = {
       }
     }
 
-    // Fetch updated data
+    
     const [updatedRows] = await pool.execute(pengembalianQueries.getById, [id]);
     return updatedRows[0] || pengembalian;
   },
 
-  // Admin menyetujui semua pengembalian sekaligus (bulk confirm)
+  
   bulkConfirm: async (ids, user) => {
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       throw new Error('Pilih minimal satu pengembalian');

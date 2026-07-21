@@ -1,7 +1,4 @@
-// ============================================
-// APP TOASTER - Dynamic toast position per role
-// Mobile-optimized toast notifications
-// ============================================
+
 
 import { useAuth } from '../../context/AuthContext';
 import { Toaster } from 'react-hot-toast';

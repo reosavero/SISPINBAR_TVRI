@@ -1,6 +1,4 @@
-// ============================================
-// KATEGORI SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pool = require('../config/db');
 const kategoriQueries = require('../queries/kategoriQueries');
@@ -37,7 +35,7 @@ const kategoriService = {
   create: async (data) => {
     const { nama, deskripsi } = data;
 
-    // Cek duplikat nama kategori
+    
     const [existing] = await pool.execute(
       'SELECT id FROM kategori WHERE nama = ?',
       [nama.trim()]
@@ -53,7 +51,7 @@ const kategoriService = {
   update: async (id, data) => {
     const { nama, deskripsi } = data;
 
-    // Cek duplikat nama kategori (kecuali dirinya sendiri)
+    
     const [existing] = await pool.execute(
       'SELECT id FROM kategori WHERE nama = ? AND id != ?',
       [nama.trim(), id]

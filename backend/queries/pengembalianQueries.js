@@ -1,11 +1,8 @@
-// ============================================
-// PENGEMBALIAN QUERIES - Sistem Peminjaman Barang TVRI
-// (Updated: include barang_id, pegawai_id, peminjaman_status, catatan_admin)
-// ============================================
+
 
 const pengembalianQueries = {
-  // Note: getAll is built dynamically in pengembalianService.getAll()
-  // This static query is kept for reference/fallback
+  
+  
   getAll: `
     SELECT pk.*, p.nomor_peminjaman, p.jumlah, p.tanggal_pinjam, p.tanggal_kembali_rencana, p.status AS peminjaman_status,
            p.pegawai_id, p.barang_id,

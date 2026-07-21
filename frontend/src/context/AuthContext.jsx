@@ -1,9 +1,4 @@
-// ============================================
-// AUTH CONTEXT - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System (3 roles)
-// ============================================
-// Menggunakan sessionStorage agar session otomatis hilang
-// saat browser ditutup atau tab baru dibuka (harus login ulang)
+
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
@@ -22,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Verifikasi token saat app pertama kali load
+  
   useEffect(() => {
     const verifyAuth = async () => {
       const token = sessionStorage.getItem('token');
@@ -36,10 +31,10 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Ada token → coba parse user data sementara
+      
       try {
         const parsedUser = JSON.parse(savedUser);
-        setUser(parsedUser); // Set sementara agar loading screen tidak terlalu lama
+        setUser(parsedUser); 
       } catch {
         sessionStorage.removeItem('token');
         sessionStorage.removeItem('user');
@@ -48,7 +43,7 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // Verifikasi token ke backend
+      
       try {
         const res = await api.get('/auth/profile');
         if (res.data.success) {
@@ -67,7 +62,7 @@ export const AuthProvider = ({ children }) => {
           sessionStorage.removeItem('user');
           setUser(null);
         } else {
-          // Server tidak bisa dijangkau → Token tidak bisa diverifikasi, hapus session
+          
           sessionStorage.removeItem('token');
           sessionStorage.removeItem('user');
           setUser(null);
@@ -80,7 +75,7 @@ export const AuthProvider = ({ children }) => {
     verifyAuth();
   }, []);
 
-  // Listen untuk event auth-expired dari API interceptor
+  
   useEffect(() => {
     const handleAuthExpired = () => {
       sessionStorage.removeItem('token');
@@ -92,7 +87,7 @@ export const AuthProvider = ({ children }) => {
     return () => window.removeEventListener('auth-expired', handleAuthExpired);
   }, []);
 
-  // Fetch fresh profile from server
+  
   const refreshProfile = async () => {
     try {
       const res = await api.get('/auth/profile');
@@ -103,12 +98,12 @@ export const AuthProvider = ({ children }) => {
         return userData;
       }
     } catch {
-      // Silently fail — keep existing user data
+      
     }
     return null;
   };
 
-  // Login menggunakan username (bukan email)
+  
   const login = async (username, password) => {
     try {
       const response = await api.post('/auth/login', { username, password });
@@ -142,12 +137,12 @@ export const AuthProvider = ({ children }) => {
 
   const isAuthenticated = !!user;
 
-  // ========== Role Checks ==========
+  
   const isSuperAdmin = user?.role === 'super_admin';
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const isPegawai = user?.role === 'pegawai';
 
-  // Specific role name for display
+  
   const roleName = user?.role === 'super_admin' ? 'Super Admin'
     : user?.role === 'admin' ? 'Admin'
     : user?.role === 'pegawai' ? 'Pegawai'

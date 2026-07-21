@@ -1,13 +1,9 @@
-// ============================================
-// NOTIFICATION CONTROLLER - Sistem Peminjaman Barang TVRI
-// Admin: dikelompokkan per pegawai per tipe aksi
-// Pegawai: flat list
-// ============================================
+
 
 const notificationService = require('../services/notificationService');
 
 const notificationController = {
-  // SSE endpoint untuk real-time notifications
+  
   subscribe: async (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
@@ -29,21 +25,21 @@ const notificationController = {
     });
   },
 
-  // Ambil notifikasi (admin: grouped per pegawai, pegawai: flat)
+  
   getNotifications: async (req, res) => {
     try {
       const { page = 1, limit = 20 } = req.query;
       const isAdmin = req.user.role === 'admin' || req.user.role === 'super_admin';
 
       if (isAdmin) {
-        // Admin: grouped by pegawai + type
+        
         const result = await notificationService.getByAdminGrouped(
           req.user.id,
           { page, limit }
         );
         res.json({ success: true, ...result });
       } else {
-        // Pegawai: flat list
+        
         const result = await notificationService.getByUser(
           null,
           req.user.id,
@@ -57,7 +53,7 @@ const notificationController = {
     }
   },
 
-  // Tandai notifikasi sebagai dibaca
+  
   markAsRead: async (req, res) => {
     try {
       const result = await notificationService.markAsRead(req.params.id, req.user.id);
@@ -67,7 +63,7 @@ const notificationController = {
     }
   },
 
-  // Tandai beberapa notifikasi sebagai dibaca sekaligus
+  
   markMultipleAsRead: async (req, res) => {
     try {
       const { ids } = req.body;
@@ -95,7 +91,7 @@ const notificationController = {
     }
   },
 
-  // Tandai semua notifikasi sebagai dibaca
+  
   markAllAsRead: async (req, res) => {
     try {
       const result = await notificationService.markAllAsRead(req.user.id, req.user.id);
@@ -105,7 +101,7 @@ const notificationController = {
     }
   },
 
-  // Hitung notifikasi yang belum dibaca
+  
   getUnreadCount: async (req, res) => {
     try {
       const result = await notificationService.getByUser(
@@ -119,7 +115,7 @@ const notificationController = {
     }
   },
 
-  // Ambil notifikasi persetujuan peminjaman untuk pegawai
+  
   getApprovalNotifications: async (req, res) => {
     try {
       if (req.user.role !== 'pegawai') {
@@ -137,7 +133,7 @@ const notificationController = {
     }
   },
 
-  // Ambil SEMUA notifikasi untuk pegawai (read + unread)
+  
   getPegawaiNotifications: async (req, res) => {
     try {
       if (req.user.role !== 'pegawai') {

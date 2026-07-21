@@ -1,6 +1,5 @@
-// ============================================
-// PEGAWAI SERVICE
-// ============================================
+
+
 import api from './api';
 
 export const pegawaiService = {
@@ -9,6 +8,7 @@ export const pegawaiService = {
   create: (data) => api.post('/pegawai', data),
   update: (id, data) => api.put(`/pegawai/${id}`, data),
   delete: (id) => api.delete(`/pegawai/${id}`),
+  resetLock: (id) => api.put(`/pegawai/${id}/reset-lock`),
 };
 
 export default pegawaiService;

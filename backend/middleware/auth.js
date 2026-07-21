@@ -1,23 +1,18 @@
-// ============================================
-// AUTH MIDDLEWARE - Sistem Peminjaman Barang TVRI
-// Updated: Super Admin Role System with Hierarchical Authorization
-// ============================================
+
 
 const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tvri_jatim_secret_key_2024_production';
 
-// Role hierarchy: super_admin > admin > pegawai
 const ROLE_HIERARCHY = {
   super_admin: 3,
   admin: 2,
   pegawai: 1,
 };
 
-// Helper: check if role has sufficient access level
 const hasAccess = (userRole, requiredRoles) => {
-  // super_admin can access everything
+  
   if (userRole === 'super_admin') return true;
   return requiredRoles.includes(userRole);
 };
@@ -37,13 +32,13 @@ const auth = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Fetch full user from DB including avatar and is_active
+    
     const [users] = await pool.execute('SELECT id, username, email, nama, role, avatar, is_active, deleted_at FROM users WHERE id = ?', [decoded.id]);
 
     if (users.length > 0) {
       const user = users[0];
 
-      // Check if user is active
+      
       if (user.is_active === 0) {
         return res.status(403).json({
           success: false,
@@ -51,7 +46,7 @@ const auth = async (req, res, next) => {
         });
       }
 
-      // Check if user is soft-deleted
+      
       if (user.deleted_at !== null) {
         return res.status(403).json({
           success: false,
@@ -87,8 +82,6 @@ const auth = async (req, res, next) => {
   }
 };
 
-// Middleware untuk role-based access
-// Mendukung hierarki: super_admin selalu punya akses jika role yang lebih rendah diperlukan
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
@@ -98,7 +91,7 @@ const authorize = (...roles) => {
       });
     }
 
-    // super_admin selalu punya akses ke semua endpoint
+    
     if (req.user.role === 'super_admin') {
       return next();
     }
@@ -114,7 +107,6 @@ const authorize = (...roles) => {
   };
 };
 
-// Middleware khusus: hanya super_admin yang boleh akses
 const superAdminOnly = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({
@@ -133,7 +125,6 @@ const superAdminOnly = (req, res, next) => {
   next();
 };
 
-// Middleware: super_admin dan admin boleh akses
 const adminAndAbove = (req, res, next) => {
   if (!req.user) {
     return res.status(401).json({

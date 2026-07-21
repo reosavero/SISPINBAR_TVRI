@@ -1,11 +1,9 @@
-// ============================================
-// PEGAWAI PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { motion } from 'framer-motion';
-import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiMail, FiPhone, FiUser, FiLock, FiCheck, FiCheckCircle, FiXCircle, FiClock } from 'react-icons/fi';
+import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiMail, FiPhone, FiUser, FiLock, FiCheck, FiCheckCircle, FiXCircle, FiClock, FiUnlock } from 'react-icons/fi';
 import { MdPeople } from 'react-icons/md';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -14,6 +12,7 @@ import DropdownSelect from '../../components/ui/DropdownSelect';
 import { useMasterData } from '../../context/MasterDataContext';
 import { getInitials, getAvatarUrl } from '../../utils/format';
 import api from '../../services/api';
+import { pegawaiService } from '../../services/pegawaiService';
 import toast from 'react-hot-toast';
 
 const Pegawai = () => {
@@ -40,11 +39,11 @@ const Pegawai = () => {
     username: '', password: '',
   });
 
-  // Reset password (dalam modal edit)
+  
   const [resetPassword, setResetPassword] = useState({ enabled: false, newPassword: '', confirmPassword: '' });
 
-  // Multi-step add form
-  const [addStep, setAddStep] = useState(1); // 1=Data, 2=Verifikasi OTP, 3=Akun Login
+  
+  const [addStep, setAddStep] = useState(1); 
   const [imgErrors, setImgErrors] = useState(new Set());
   const [otpCode, setOtpCode] = useState('');
   const [otpLoading, setOtpLoading] = useState(false);
@@ -55,15 +54,20 @@ const Pegawai = () => {
   const [otpError, setOtpError] = useState('');
   const otpRefs = useRef([]);
 
-  // Pending registrations (admin only)
+  
   const [pendingUsers, setPendingUsers] = useState([]);
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectingUser, setRejectingUser] = useState(null);
 
+  
+  const isLocked = (item) => {
+    return item.locked_until && new Date(item.locked_until) > new Date();
+  };
+
   useEffect(() => { fetchPegawai(); }, [currentPage, search, filterJabatan, filterDivisi]);
 
-  // Fetch pending registrations (admin+)
+  
   useEffect(() => {
     if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
       fetchPending();
@@ -74,7 +78,8 @@ const Pegawai = () => {
     try {
       const res = await api.get('/users/pending');
       if (res.data.success) setPendingUsers(res.data.data || []);
-    } catch (err) { /* silently fail */ }
+    } catch (err) { 
+ }
   };
 
   const handleApprove = async (userId) => {
@@ -143,6 +148,19 @@ const Pegawai = () => {
     setLoading(false);
   };
 
+  const handleResetLock = async (pegawaiId, pegawaiNama) => {
+    try {
+      await pegawaiService.resetLock(pegawaiId);
+      toast.success(`Lock percobaan login ${pegawaiNama} berhasil direset`);
+      fetchPegawai();
+      if (currentUser?.role === 'admin' || currentUser?.role === 'super_admin') {
+        fetchPending();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Gagal mereset lock percobaan login');
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditItem(null);
     setForm({ nip: '', nama: '', jabatan: '', divisi: '', email: '', nomor_hp: '', username: '', password: '' });
@@ -173,7 +191,7 @@ const Pegawai = () => {
     setShowModal(true);
   };
 
-  // ========== STEP VALIDATION ==========
+  
   const validateStep1 = () => {
     if (!form.nama.trim()) { toast.error('Nama wajib diisi'); return false; }
     if (!form.nip.trim()) { toast.error('NIP wajib diisi'); return false; }
@@ -190,7 +208,7 @@ const Pegawai = () => {
     return true;
   };
 
-  // ========== OTP HANDLERS ==========
+  
   const handleSendOtp = async () => {
     if (!form.email.trim()) { toast.error('Email wajib diisi terlebih dahulu'); return; }
     setOtpLoading(true);
@@ -234,7 +252,7 @@ const Pegawai = () => {
     if (addStep === 1) {
       if (!validateStep1()) return;
       setAddStep(2);
-      // Auto-send OTP when moving to step 2
+      
       if (!otpSent) {
         setTimeout(() => handleSendOtp(), 300);
       }
@@ -244,11 +262,11 @@ const Pegawai = () => {
     }
   };
 
-  // ========== SUBMIT (CREATE PEGAWAI) ==========
+  
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
 
-    // Edit mode
+    
     if (editItem) {
       if (!form.nama || !form.nip) { toast.error('NIP dan Nama wajib diisi'); return; }
       if (resetPassword.enabled) {
@@ -273,7 +291,7 @@ const Pegawai = () => {
       return;
     }
 
-    // Add mode - final step
+    
     if (!validateStep3()) return;
     if (!otpVerified) { toast.error('Email belum diverifikasi'); return; }
 
@@ -320,7 +338,8 @@ const Pegawai = () => {
         </div>
       </div>
 
-      {/* Pending Registration Approval (admin only) */}
+      {
+}
       {(currentUser?.role === 'admin' || currentUser?.role === 'super_admin') && pendingUsers.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-5 mb-4">
           <div className="flex items-center gap-2 mb-3">
@@ -374,7 +393,8 @@ const Pegawai = () => {
         </div>
       )}
 
-      {/* Filter & Tambah Pegawai */}
+      {
+}
       <div className="bg-white rounded-2xl p-3 sm:p-4 shadow-sm mb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-1 w-full sm:w-auto">
@@ -449,6 +469,15 @@ const Pegawai = () => {
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-center gap-1">
 
+                      {isLocked(item) && (
+                        <button
+                          onClick={() => handleResetLock(item.id, item.nama)}
+                          className="p-1.5 rounded-lg hover:bg-emerald-50 text-emerald-600"
+                          title="Reset lock percobaan login"
+                        >
+                          <FiUnlock className="w-4 h-4" />
+                        </button>
+                      )}
                       <button onClick={() => handleOpenEdit(item)} className="p-1.5 rounded-lg hover:bg-amber-50 text-amber-600" title="Edit"><FiEdit2 className="w-4 h-4" /></button>
                       <button onClick={() => { setDeleteItem(item); setShowDelete(true); }} className="p-1.5 rounded-lg hover:bg-red-50 text-red-500" title="Hapus"><FiTrash2 className="w-4 h-4" /></button>
                     </div>
@@ -470,7 +499,8 @@ const Pegawai = () => {
           </table>
         </div>
 
-        {/* Mobile Cards */}
+        {
+}
         <div className="md:hidden space-y-3 p-4">
           {pegawai.length === 0 && !loading ? (
             <div className="flex flex-col items-center justify-center py-12 text-gray-400">
@@ -489,6 +519,15 @@ const Pegawai = () => {
                     <p className="text-xs text-gray-400">{item.user_role || 'operator'}</p>
                   </div>
                   <div className="flex items-center gap-1">
+                    {isLocked(item) && (
+                      <button
+                        onClick={() => handleResetLock(item.id, item.nama)}
+                        className="p-2 rounded-lg hover:bg-emerald-50 text-emerald-600"
+                        title="Reset lock percobaan login"
+                      >
+                        <FiUnlock className="w-4 h-4" />
+                      </button>
+                    )}
                     <button onClick={() => handleOpenEdit(item)} className="p-2 rounded-lg hover:bg-amber-50 text-amber-600"><FiEdit2 className="w-4 h-4" /></button>
                     <button onClick={() => { setDeleteItem(item); setShowDelete(true); }} className="p-2 rounded-lg hover:bg-red-50 text-red-500"><FiTrash2 className="w-4 h-4" /></button>
                   </div>
@@ -537,12 +576,15 @@ const Pegawai = () => {
         )}
       </div>
 
-      {/* ========== MODAL TAMBAH/EDIT PEGAWAI ========== */}
+      {
+}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Pegawai' : 'Tambah Pegawai Baru'} size="lg">
         {editItem ? (
-          /* ===== EDIT MODE ===== */
+          
+
           <form onSubmit={handleSubmit}>
-            {/* Section: Data Login */}
+            {
+}
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-lg bg-[#005BAC]/10 flex items-center justify-center">
@@ -596,7 +638,8 @@ const Pegawai = () => {
               )}
             </div>
             <div className="border-t border-gray-200 my-5"></div>
-            {/* Section: Data Pribadi */}
+            {
+}
             <div className="mb-4">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-7 h-7 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -653,9 +696,11 @@ const Pegawai = () => {
             </div>
           </form>
         ) : (
-          /* ===== ADD MODE - Multi Step ===== */
+          
+
           <div className="space-y-5">
-            {/* Step Indicator */}
+            {
+}
             <div className="flex items-center justify-center gap-2 mb-4">
               <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${addStep >= 2 ? 'bg-emerald-100 text-emerald-700' : 'bg-[#005BAC] text-white'}`}>
                 {addStep > 1 && <FiCheckCircle className="w-3.5 h-3.5" />}
@@ -672,7 +717,8 @@ const Pegawai = () => {
               </div>
             </div>
 
-            {/* ===== STEP 1: Data Pegawai ===== */}
+            {
+}
             {addStep === 1 && (
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
@@ -730,7 +776,8 @@ const Pegawai = () => {
               </div>
             )}
 
-            {/* ===== STEP 2: Verifikasi Email (OTP) ===== */}
+            {
+}
             {addStep === 2 && (
               <div className="space-y-4">
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
@@ -845,7 +892,8 @@ const Pegawai = () => {
               </div>
             )}
 
-            {/* ===== STEP 3: Akun Login ===== */}
+            {
+}
             {addStep === 3 && (
               <div className="space-y-4">
                 <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
@@ -902,7 +950,8 @@ const Pegawai = () => {
             )}
           </div>
         )}
-      </Modal>      {/* ========== KONFIRMASI HAPUS ========== */}
+      </Modal>      {
+}
       <ConfirmDialog
         isOpen={showDelete}
         onClose={() => setShowDelete(false)}
@@ -911,7 +960,8 @@ const Pegawai = () => {
         message={`Apakah Anda yakin ingin menghapus pegawai "${deleteItem?.nama}"? Akun login pegawai ini juga akan dihapus secara permanen. Tindakan ini tidak dapat dibatalkan.`}
       />
 
-      {/* ========== REJECT REGISTRATION MODAL ========== */}
+      {
+}
       <Modal isOpen={showRejectModal} onClose={() => { setShowRejectModal(false); setRejectingUser(null); }} title="Tolak Registrasi" size="sm">
         <div className="space-y-4">
           <div className="bg-red-50 border border-red-200 rounded-xl p-3">

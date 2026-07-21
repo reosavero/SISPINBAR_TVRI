@@ -1,6 +1,4 @@
-// ============================================
-// KATEGORI CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const kategoriService = require('../services/kategoriService');
 

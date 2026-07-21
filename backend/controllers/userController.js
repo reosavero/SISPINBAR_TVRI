@@ -1,12 +1,9 @@
-// ============================================
-// USER CONTROLLER - Sistem Peminjaman Barang TVRI
-// Manajemen User oleh Super Admin
-// ============================================
+
 
 const userService = require('../services/userService');
 
 const userController = {
-  // ========== GET ALL USERS ==========
+  
   getAll: async (req, res) => {
     try {
       const result = await userService.getAll(req.query);
@@ -17,7 +14,7 @@ const userController = {
     }
   },
 
-  // ========== GET ALL ADMINS ==========
+  
   getAdmins: async (req, res) => {
     try {
       const result = await userService.getAdmins(req.query);
@@ -28,7 +25,7 @@ const userController = {
     }
   },
 
-  // ========== GET PEGAWAI BY JABATAN/DIVISI (Admin & Super Admin) ==========
+  
   getByJabatanOrDivisi: async (req, res) => {
     try {
       const { type, value, page, limit } = req.query;
@@ -40,7 +37,7 @@ const userController = {
     }
   },
 
-  // ========== GET USER BY ID ==========
+  
   getById: async (req, res) => {
     try {
       const result = await userService.getById(req.params.id);
@@ -53,7 +50,7 @@ const userController = {
     }
   },
 
-  // ========== CREATE ADMIN (Super Admin only) ==========
+  
   createAdmin: async (req, res) => {
     try {
       const result = await userService.createAdmin(req.body, {
@@ -71,7 +68,7 @@ const userController = {
     }
   },
 
-  // ========== UPDATE USER (Super Admin only) ==========
+  
   update: async (req, res) => {
     try {
       const result = await userService.update(req.params.id, req.body, {
@@ -89,7 +86,7 @@ const userController = {
     }
   },
 
-  // ========== DELETE USER (Soft Delete, Super Admin only) ==========
+  
   delete: async (req, res) => {
     try {
       const result = await userService.delete(req.params.id, {
@@ -107,7 +104,7 @@ const userController = {
     }
   },
 
-  // ========== TOGGLE ACTIVE/INACTIVE (Super Admin only) ==========
+  
   toggleActive: async (req, res) => {
     try {
       const result = await userService.toggleActive(req.params.id, {
@@ -125,7 +122,7 @@ const userController = {
     }
   },
 
-  // ========== RESET PASSWORD (Super Admin only) ==========
+  
   resetPassword: async (req, res) => {
     try {
       const { newPassword } = req.body;
@@ -144,7 +141,7 @@ const userController = {
     }
   },
 
-  // ========== GET USER STATS (Super Admin only) ==========
+  
   getStats: async (req, res) => {
     try {
       const result = await userService.getStats();
@@ -154,7 +151,7 @@ const userController = {
     }
   },
 
-  // ========== GET PENDING REGISTRATIONS (Admin & Super Admin) ==========
+  
   getPending: async (req, res) => {
     try {
       const result = await userService.getPending();
@@ -164,7 +161,7 @@ const userController = {
     }
   },
 
-  // ========== APPROVE REGISTRATION ==========
+  
   approve: async (req, res) => {
     try {
       const result = await userService.approve(req.params.id, {
@@ -188,7 +185,7 @@ const userController = {
     }
   },
 
-  // ========== REJECT REGISTRATION ==========
+  
   reject: async (req, res) => {
     try {
       const { reason } = req.body;
@@ -208,6 +205,24 @@ const userController = {
     } catch (error) {
       if (error.message.includes('tidak ditemukan') || error.message.includes('bukan')) {
         return res.status(404).json({ success: false, message: error.message });
+      }
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  
+  resetLock: async (req, res) => {
+    try {
+      const result = await userService.resetLock(req.params.id, {
+        id: req.user.id,
+        username: req.user.username,
+        ip: req.ip || req.connection?.remoteAddress,
+      });
+      res.json({ success: true, data: result });
+    } catch (error) {
+      console.error('Reset lock error:', error);
+      if (error.message.includes('tidak ditemukan') || error.message.includes('tidak dapat')) {
+        return res.status(400).json({ success: false, message: error.message });
       }
       res.status(500).json({ success: false, message: error.message });
     }

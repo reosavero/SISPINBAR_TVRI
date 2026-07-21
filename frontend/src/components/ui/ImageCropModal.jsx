@@ -1,9 +1,4 @@
-// ============================================
-// IMAGE CROP MODAL - Sistem Peminjaman Barang TVRI
-// ============================================
-// Komponen modal untuk mengatur rasio dan area
-// crop foto sebelum diunggah
-// ============================================
+
 
 import { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
@@ -11,7 +6,6 @@ import { FiCrop, FiZoomIn, FiZoomOut, FiCheck, FiX, FiRotateCw, FiMove } from 'r
 import Modal from './Modal';
 import Button from './Button';
 
-// Pilihan rasio foto yang tersedia
 const ASPECT_RATIOS = [
   { label: '4:3', value: 4 / 3, name: 'Standar', desc: 'Cocok untuk umum' },
   { label: '1:1', value: 1, name: 'Persegi', desc: 'Cocok untuk ikon' },
@@ -63,7 +57,8 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Atur Foto Barang" size="xl">
       <div className="space-y-4">
-        {/* Info Banner */}
+        {
+}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-start gap-2">
           <FiMove className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
           <div>
@@ -72,7 +67,8 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
           </div>
         </div>
 
-        {/* Aspect Ratio Selector */}
+        {
+}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             <FiCrop className="w-4 h-4 inline mr-1 -mt-0.5" />
@@ -96,7 +92,8 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
           </div>
         </div>
 
-        {/* Crop Area */}
+        {
+}
         <div className="relative w-full bg-gray-900 rounded-xl overflow-hidden" style={{ height: '350px' }}>
           <Cropper
             image={imageSrc}
@@ -112,7 +109,8 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
           />
         </div>
 
-        {/* Zoom Control */}
+        {
+}
         <div className="flex items-center gap-3">
           <FiZoomOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input
@@ -128,7 +126,8 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
           <span className="text-xs text-gray-500 w-12 text-right font-mono">{Math.round(zoom * 100)}%</span>
         </div>
 
-        {/* Actions */}
+        {
+}
         <div className="flex flex-col sm:flex-row justify-between gap-3 pt-4 border-t border-gray-100">
           <Button variant="outline" onClick={handleReset} icon={FiRotateCw}>
             Atur Ulang
@@ -147,22 +146,19 @@ const ImageCropModal = ({ isOpen, onClose, imageSrc, onCropComplete, defaultAspe
   );
 };
 
-// ============================================
-// Utility: Crop image menggunakan Canvas API
-// ============================================
 async function getCroppedImg(imageSrc, pixelCrop) {
   const image = await createImage(imageSrc);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
 
-  // Maksimal dimensi output untuk kualitas & performa
+  
   const MAX_DIMENSION = 1200;
   const scale = Math.min(MAX_DIMENSION / pixelCrop.width, MAX_DIMENSION / pixelCrop.height, 1);
 
   canvas.width = Math.round(pixelCrop.width * scale);
   canvas.height = Math.round(pixelCrop.height * scale);
 
-  // Kualitas rendering tinggi
+  
   ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = 'high';
 
@@ -191,7 +187,6 @@ async function getCroppedImg(imageSrc, pixelCrop) {
   });
 }
 
-// Utility: Load image dari URL/DataURL
 function createImage(url) {
   return new Promise((resolve, reject) => {
     const image = new Image();

@@ -1,10 +1,4 @@
-// ============================================
-// NUMBER INPUT COMPONENT - Sistem Peminjaman Barang TVRI
-// ============================================
-// Reusable number input with increment/decrement buttons.
-// Mobile-friendly with 44px minimum touch targets.
-// Supports min/max validation and direct typing.
-// ============================================
+
 
 import { FiMinus, FiPlus } from 'react-icons/fi';
 
@@ -81,7 +75,8 @@ const NumberInput = ({
         </label>
       )}
       <div className="inline-flex items-stretch">
-        {/* Decrement Button */}
+        {
+}
         <button
           type="button"
           onClick={handleDecrement}
@@ -103,7 +98,8 @@ const NumberInput = ({
           <FiMinus className="w-4 h-4" />
         </button>
 
-        {/* Number Input */}
+        {
+}
         <input
           type="text"
           inputMode="numeric"
@@ -123,7 +119,8 @@ const NumberInput = ({
           required={required}
         />
 
-        {/* Increment Button */}
+        {
+}
         <button
           type="button"
           onClick={handleIncrement}

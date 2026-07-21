@@ -1,12 +1,9 @@
-// ============================================
-// SETTINGS CONTROLLER - Sistem Peminjaman Barang TVRI
-// System Settings (Super Admin only)
-// ============================================
+
 
 const settingsService = require('../services/settingsService');
 
 const settingsController = {
-  // ========== GET ALL SETTINGS ==========
+  
   getAll: async (req, res) => {
     try {
       const result = await settingsService.getAll();
@@ -16,7 +13,7 @@ const settingsController = {
     }
   },
 
-  // ========== GET APP INFO ==========
+  
   getAppInfo: async (req, res) => {
     try {
       const result = await settingsService.getAppInfo();
@@ -26,7 +23,7 @@ const settingsController = {
     }
   },
 
-  // ========== UPDATE SETTING ==========
+  
   update: async (req, res) => {
     try {
       const { key, value } = req.body;
@@ -51,7 +48,7 @@ const settingsController = {
     }
   },
 
-  // ========== UPDATE MULTIPLE SETTINGS ==========
+  
   updateMultiple: async (req, res) => {
     try {
       const { settings } = req.body;

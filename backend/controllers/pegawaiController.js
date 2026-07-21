@@ -1,6 +1,4 @@
-// ============================================
-// PEGAWAI CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pegawaiService = require('../services/pegawaiService');
 const emailVerificationService = require('../services/emailVerificationService');
@@ -26,7 +24,7 @@ const pegawaiController = {
     }
   },
 
-  // ========== SEND OTP - Admin mengirim OTP ke email pegawai baru ==========
+  
   sendOtp: async (req, res) => {
     try {
       const { email } = req.body;
@@ -35,20 +33,20 @@ const pegawaiController = {
         return res.status(400).json({ success: false, message: 'Email wajib diisi' });
       }
 
-      // Validasi format email
+      
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email.trim())) {
         return res.status(400).json({ success: false, message: 'Format email tidak valid' });
       }
 
-      // Cek duplikat email
+      
       const pool = require('../config/db');
       const [existingEmail] = await pool.execute('SELECT id FROM users WHERE email = ? AND deleted_at IS NULL', [email.trim()]);
       if (existingEmail.length > 0) {
         return res.status(409).json({ success: false, message: 'Email sudah terdaftar. Silakan gunakan email lain.' });
       }
 
-      // Kirim OTP
+      
       const result = await emailVerificationService.sendOtp(email.trim());
       res.json({ success: true, message: 'Kode verifikasi telah dikirim ke email pegawai' });
     } catch (error) {
@@ -57,7 +55,7 @@ const pegawaiController = {
     }
   },
 
-  // ========== VERIFY OTP - Admin memverifikasi OTP pegawai baru ==========
+  
   verifyOtp: async (req, res) => {
     try {
       const { email, otp } = req.body;
@@ -78,12 +76,12 @@ const pegawaiController = {
     }
   },
 
-  // ========== CREATE - Admin menambah pegawai + buat akun login ==========
+  
   create: async (req, res) => {
     try {
       const { email } = req.body;
 
-      // Jika email diisi, wajib verifikasi OTP terlebih dahulu
+      
       if (email && email.trim()) {
         const isVerified = await emailVerificationService.isEmailVerified(email.trim());
         if (!isVerified) {
@@ -128,7 +126,7 @@ const pegawaiController = {
     }
   },
 
-  // ========== RESET PASSWORD - Admin reset password pegawai ==========
+  
   resetPassword: async (req, res) => {
     try {
       const { id } = req.params;
@@ -145,6 +143,21 @@ const pegawaiController = {
       res.json({ success: true, message: 'Password pegawai berhasil direset' });
     } catch (error) {
       console.error('Reset password pegawai error:', error);
+      if (error.message.includes('tidak ditemukan')) {
+        return res.status(404).json({ success: false, message: error.message });
+      }
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  
+  resetLock: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await pegawaiService.resetLock(id);
+      res.json({ success: true, message: 'Lock percobaan login berhasil direset' });
+    } catch (error) {
+      console.error('Reset lock pegawai error:', error);
       if (error.message.includes('tidak ditemukan')) {
         return res.status(404).json({ success: false, message: error.message });
       }

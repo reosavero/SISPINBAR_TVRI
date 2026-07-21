@@ -1,6 +1,4 @@
-// ============================================
-// DIVISI SERVICE - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 import api from './api';
 

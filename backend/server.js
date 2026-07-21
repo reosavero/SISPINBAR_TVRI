@@ -1,6 +1,4 @@
-// ============================================
-// SERVER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 require('dotenv').config();
 const app = require('./app');
@@ -8,15 +6,12 @@ const { cleanupOldLogs } = require('./services/auditCleanupService');
 
 const PORT = process.env.PORT || 5000;
 
-// ========== SCHEDULED: Auto cleanup audit logs daily at 00:00 ==========
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-// Calculate ms until next midnight
 const now = new Date();
 const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0);
 const msUntilMidnight = midnight.getTime() - now.getTime();
 
-// First run at next midnight, then every 24 hours
 setTimeout(() => {
   console.log('[SCHEDULER] 🧹 Running daily audit log cleanup...');
   cleanupOldLogs({ username: 'auto-scheduler' })
@@ -29,7 +24,7 @@ setTimeout(() => {
     })
     .catch(err => console.error('[SCHEDULER] ❌ Audit cleanup error:', err.message));
 
-  // Schedule recurring every 24 hours
+  
   setInterval(() => {
     console.log('[SCHEDULER] 🧹 Running daily audit log cleanup...');
     cleanupOldLogs({ username: 'auto-scheduler' })

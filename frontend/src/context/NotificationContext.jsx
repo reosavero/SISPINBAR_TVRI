@@ -1,8 +1,4 @@
-// ============================================
-// NOTIFICATION CONTEXT - Sistem Peminjaman Barang TVRI
-// Admin: Grouped per Pegawai per Tipe Aksi
-// Pegawai: Semua notifikasi (read + unread), tetap tampil setelah dibaca
-// ============================================
+
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './AuthContext';
@@ -29,12 +25,12 @@ export const NotificationProvider = ({ children }) => {
   const pollingRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  // ============ PEGAWAI: SEMUA NOTIFIKASI ============
+  
   const [pegawaiNotifs, setPegawaiNotifs] = useState([]);
   const [pegawaiUnreadCount, setPegawaiUnreadCount] = useState(0);
   const [pegawaiNotifLoading, setPegawaiNotifLoading] = useState(false);
 
-  // Fetch ALL notifications for pegawai (read + unread)
+  
   const fetchPegawaiNotifications = useCallback(async () => {
     if (!user?.id || isAdmin) return;
     if (!sessionStorage.getItem('token')) return;
@@ -46,37 +42,37 @@ export const NotificationProvider = ({ children }) => {
       }
     } catch (err) {
       if (err.code === 'ERR_CANCELED' || err.name === 'CanceledError') return;
-      // silently fail
+      
     }
   }, [user?.id, isAdmin]);
 
-  // Mark single pegawai notification as read — hilangkan dari daftar
+  
   const markPegawaiNotifRead = useCallback(async (notifId) => {
     try {
       await api.put(`/notifications/${notifId}/read`);
-      // Hapus dari daftar lokal
+      
       setPegawaiNotifs(prev => prev.filter(n => n.id !== notifId));
       setPegawaiUnreadCount(prev => Math.max(0, prev - 1));
     } catch {
-      // silently fail
+      
     }
   }, []);
 
-  // Mark all pegawai notifications as read — NOTIFIKASI HILANG DARI DAFTAR
+  
   const markAllPegawaiNotifRead = useCallback(async () => {
     try {
       await api.put('/notifications/mark-all-read');
-      // Kosongkan daftar notifikasi & badge
+      
       setPegawaiNotifs([]);
       setPegawaiUnreadCount(0);
     } catch {
-      // silently fail
+      
     }
   }, []);
 
-  // ============ ADMIN: NOTIFIKASI ============
+  
 
-  // Fetch notifications from API (admin only) — returns grouped data
+  
   const fetchNotifications = useCallback(async () => {
     if (!user || !isAdmin) return;
     if (!sessionStorage.getItem('token')) return;
@@ -93,7 +89,7 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [user, isAdmin]);
 
-  // Fetch unread count only (admin only)
+  
   const fetchUnreadCount = useCallback(async () => {
     if (!user || !isAdmin) return;
     if (!sessionStorage.getItem('token')) return;
@@ -103,11 +99,11 @@ export const NotificationProvider = ({ children }) => {
         setUnreadCount(res.data.data?.unreadCount || 0);
       }
     } catch (err) {
-      // silently fail
+      
     }
   }, [user, isAdmin]);
 
-  // Mark a single notification as read
+  
   const markAsRead = useCallback(async (notifId) => {
     if (!isAdmin) return;
     try {
@@ -118,7 +114,7 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [isAdmin, fetchNotifications]);
 
-  // Mark multiple notifications as read
+  
   const markMultipleAsRead = useCallback(async (ids) => {
     if (!isAdmin || !ids || ids.length === 0) return;
     try {
@@ -129,7 +125,7 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [isAdmin, fetchNotifications]);
 
-  // Mark all admin notifications as read
+  
   const markAllAsRead = useCallback(async () => {
     if (!isAdmin) return;
     try {
@@ -142,7 +138,7 @@ export const NotificationProvider = ({ children }) => {
     }
   }, [isAdmin]);
 
-  // Toggle group expansion
+  
   const toggleGroup = useCallback((groupId) => {
     setExpandedGroups(prev => {
       const next = new Set(prev);
@@ -155,7 +151,7 @@ export const NotificationProvider = ({ children }) => {
     });
   }, []);
 
-  // Mark all items in a group as read
+  
   const markGroupAsRead = useCallback(async (group) => {
     if (!group?.is_group || !group.items) return;
     const ids = group.items.map(item => item.id);
@@ -168,7 +164,7 @@ export const NotificationProvider = ({ children }) => {
     toast.success(`${group.group_count} notifikasi ditandai dibaca`);
   }, [markMultipleAsRead]);
 
-  // ============ INIT & POLLING ============
+  
 
   useEffect(() => {
     if (!user) {
@@ -189,7 +185,7 @@ export const NotificationProvider = ({ children }) => {
       fetchPegawaiNotifications();
     }
 
-    // Poll every 30 seconds
+    
     pollingRef.current = setInterval(() => {
       if (isAdmin) {
         fetchUnreadCount();
@@ -206,7 +202,7 @@ export const NotificationProvider = ({ children }) => {
     };
   }, [user, isAdmin, fetchNotifications, fetchUnreadCount, fetchPegawaiNotifications]);
 
-  // Close dropdown when clicking outside
+  
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -217,7 +213,7 @@ export const NotificationProvider = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Refresh notifications
+  
   const refresh = useCallback(async () => {
     if (isAdmin) {
       setLoading(true);
@@ -231,7 +227,7 @@ export const NotificationProvider = ({ children }) => {
   }, [isAdmin, fetchNotifications, user?.id, fetchPegawaiNotifications]);
 
   const value = {
-    // Admin notifications
+    
     notifications,
     unreadCount,
     showDropdown,
@@ -245,7 +241,7 @@ export const NotificationProvider = ({ children }) => {
     markGroupAsRead,
     toggleGroup,
     refresh,
-    // Pegawai notifications
+    
     pegawaiNotifs,
     pegawaiUnreadCount,
     pegawaiNotifLoading,

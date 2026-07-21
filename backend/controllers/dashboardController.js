@@ -1,6 +1,4 @@
-// ============================================
-// DASHBOARD CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const dashboardService = require('../services/dashboardService');
 const lokasiService = require('../services/lokasiService');
@@ -15,7 +13,7 @@ const dashboardController = {
     }
   },
 
-  // Pegawai dashboard stats
+  
   getPegawaiStats: async (req, res) => {
     try {
       const result = await dashboardService.getPegawaiStats(req.user.id);
@@ -25,7 +23,7 @@ const dashboardController = {
     }
   },
 
-  // Pegawai recent peminjaman
+  
   getPegawaiRecentPeminjaman: async (req, res) => {
     try {
       const page = parseInt(req.query.page) || 1;
@@ -84,7 +82,7 @@ const dashboardController = {
     }
   },
 
-  // Lokasi stats for dashboard
+  
   getLokasiStats: async (req, res) => {
     try {
       const stats = await lokasiService.getStats();

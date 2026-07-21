@@ -1,6 +1,4 @@
-// ============================================
-// PENGEMBALIAN CONTROLLER - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const pengembalianService = require('../services/pengembalianService');
 
@@ -9,7 +7,7 @@ const pengembalianController = {
     try {
       const params = { ...req.query };
 
-      // Pegawai hanya bisa melihat pengembalian miliknya sendiri
+      
       if (req.user.role === 'pegawai') {
         params.pegawai_id = req.user.id;
       }
@@ -22,7 +20,7 @@ const pengembalianController = {
     }
   },
 
-  // Get detail pengembalian by ID
+  
   getById: async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -32,7 +30,7 @@ const pengembalianController = {
 
       const result = await pengembalianService.getById(id);
 
-      // Pegawai hanya bisa melihat pengembalian miliknya sendiri
+      
       if (req.user.role === 'pegawai' && result.pegawai_id !== req.user.id) {
         return res.status(403).json({ success: false, message: 'Anda tidak memiliki akses untuk melihat pengembalian ini' });
       }
@@ -47,7 +45,7 @@ const pengembalianController = {
 
   create: async (req, res) => {
     try {
-      // Parse peminjaman_id to integer (FormData sends string)
+      
       const peminjaman_id = parseInt(req.body.peminjaman_id, 10);
       if (isNaN(peminjaman_id)) {
         return res.status(400).json({
@@ -76,7 +74,7 @@ const pengembalianController = {
     }
   },
 
-  // Admin mengkonfirmasi barang telah diterima
+  
   confirm: async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -93,7 +91,7 @@ const pengembalianController = {
     }
   },
 
-  // Admin menolak pengembalian
+  
   reject: async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);
@@ -111,7 +109,7 @@ const pengembalianController = {
     }
   },
 
-  // Admin menyetujui semua pengembalian sekaligus (bulk confirm)
+  
   bulkConfirm: async (req, res) => {
     try {
       const { ids } = req.body;

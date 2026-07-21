@@ -1,8 +1,4 @@
-// ============================================
-// USER SERVICE - Sistem Peminjaman Barang TVRI
-// Manajemen User (Admin & Pegawai) oleh Super Admin
-// (pegawai merged into users table)
-// ============================================
+
 
 const pool = require('../config/db');
 const bcrypt = require('bcryptjs');
@@ -10,7 +6,7 @@ const auditService = require('./auditService');
 const emailService = require('./emailService');
 
 const userService = {
-  // ========== GET ALL USERS (Super Admin) ==========
+  
   getAll: async (params = {}) => {
     const page = parseInt(params.page) || 1;
     const limit = parseInt(params.limit) || 20;
@@ -29,12 +25,16 @@ const userService = {
     if (role) {
       whereConditions.push('u.role = ?');
       queryParams.push(role);
+      
+      if (role === 'pegawai') {
+        whereConditions.push("u.registration_status = 'approved'");
+      }
     }
 
     const whereClause = 'WHERE ' + whereConditions.join(' AND ');
 
     const [rows] = await pool.execute(
-      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at
+      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at, u.login_attempts, u.locked_until
        FROM users u
        ${whereClause}
        ORDER BY u.role ASC, u.nama ASC
@@ -56,7 +56,7 @@ const userService = {
     };
   },
 
-  // ========== GET ALL ADMINS (Super Admin) ==========
+  
   getAdmins: async (params = {}) => {
     const page = parseInt(params.page) || 1;
     const limit = parseInt(params.limit) || 10;
@@ -74,7 +74,7 @@ const userService = {
     const whereClause = 'WHERE ' + whereConditions.join(' AND ');
 
     const [rows] = await pool.execute(
-      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at
+      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at, u.login_attempts, u.locked_until
        FROM users u
        ${whereClause}
        ORDER BY u.nama ASC
@@ -96,7 +96,7 @@ const userService = {
     };
   },
 
-  // ========== GET PEGAWAI BY JABATAN OR DIVISI ==========
+  
   getByJabatanOrDivisi: async (params = {}) => {
     const { type, value } = params;
     if (!type || !value) return { data: [], pagination: { page: 1, totalPages: 0, totalItems: 0, itemsPerPage: 20 } };
@@ -130,10 +130,10 @@ const userService = {
     };
   },
 
-  // ========== GET USER BY ID ==========
+  
   getById: async (id) => {
     const [rows] = await pool.execute(
-      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at
+      `SELECT u.id, u.username, u.email, u.nama, u.role, u.avatar, u.is_active, u.nip, u.jabatan, u.divisi, u.nomor_hp, u.created_at, u.login_attempts, u.locked_until
        FROM users u
        WHERE u.id = ? AND u.deleted_at IS NULL`,
       [id]
@@ -141,7 +141,7 @@ const userService = {
     return rows[0] || null;
   },
 
-  // ========== CREATE ADMIN (Super Admin only) ==========
+  
   createAdmin: async (data, createdBy) => {
     const { username, email, nama, password } = data;
 
@@ -196,7 +196,7 @@ const userService = {
     return newAdmin[0];
   },
 
-  // ========== UPDATE USER (Super Admin) ==========
+  
   update: async (id, data, updatedBy) => {
     const [targetUser] = await pool.execute('SELECT id, role, username FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
     if (targetUser.length === 0) {
@@ -211,7 +211,7 @@ const userService = {
       throw new Error('Tidak dapat membuat akun dengan role Super Admin');
     }
 
-    // Check username uniqueness if changing
+    
     if (data.username && data.username !== targetUser[0].username) {
       if (data.username.length < 3) {
         throw new Error('Username minimal 3 karakter');
@@ -251,7 +251,7 @@ const userService = {
       values
     );
 
-    // Update password if provided
+    
     if (data.password) {
       if (data.password.length < 6) {
         throw new Error('Password minimal 6 karakter');
@@ -278,7 +278,7 @@ const userService = {
     return updatedUser[0];
   },
 
-  // ========== DELETE USER (Hard Delete, Super Admin only) ==========
+  
   delete: async (id, deletedBy) => {
     const [targetUser] = await pool.execute('SELECT id, role, username FROM users WHERE id = ?', [id]);
     if (targetUser.length === 0) {
@@ -293,7 +293,7 @@ const userService = {
       throw new Error('Anda tidak dapat menghapus akun Anda sendiri');
     }
 
-    // Check if user has active peminjaman
+    
     const [activeCount] = await pool.execute(
       "SELECT COUNT(*) AS count FROM peminjaman WHERE pegawai_id = ? AND status IN ('Menunggu Persetujuan', 'Disetujui', 'Dipinjam', 'Menunggu Konfirmasi')",
       [id]
@@ -302,13 +302,13 @@ const userService = {
       throw new Error('User tidak dapat dihapus karena masih memiliki peminjaman aktif.');
     }
 
-    // Nullify pegawai_id on peminjaman records
+    
     await pool.execute('UPDATE peminjaman SET pegawai_id = NULL WHERE pegawai_id = ?', [id]);
 
-    // Nullify user_id on audit_log records (preserve audit history)
+    
     await pool.execute('UPDATE audit_log SET user_id = NULL WHERE user_id = ?', [id]);
 
-    // Hard delete user
+    
     await pool.execute('DELETE FROM users WHERE id = ?', [id]);
 
     await auditService.log({
@@ -324,7 +324,7 @@ const userService = {
     return { id, message: 'User berhasil dihapus' };
   },
 
-  // ========== TOGGLE ACTIVE/INACTIVE (Super Admin only) ==========
+  
   toggleActive: async (id, toggledBy) => {
     const [targetUser] = await pool.execute('SELECT id, role, username, is_active FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
     if (targetUser.length === 0) {
@@ -355,7 +355,7 @@ const userService = {
     return { id, is_active: newStatus, message: newStatus ? 'Akun berhasil diaktifkan' : 'Akun berhasil dinonaktifkan' };
   },
 
-  // ========== RESET PASSWORD (Super Admin only) ==========
+  
   resetPassword: async (id, newPassword, resetBy) => {
     const [targetUser] = await pool.execute('SELECT id, role, username FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
     if (targetUser.length === 0) {
@@ -386,7 +386,36 @@ const userService = {
     return { id, message: 'Password berhasil direset' };
   },
 
-  // ========== GET USER STATS (Super Admin) ==========
+  
+  resetLock: async (id, resetBy) => {
+    const [targetUser] = await pool.execute('SELECT id, role, username FROM users WHERE id = ? AND deleted_at IS NULL', [id]);
+    if (targetUser.length === 0) {
+      throw new Error('User tidak ditemukan');
+    }
+
+    if (targetUser[0].role === 'super_admin') {
+      throw new Error('Lock Super Admin tidak dapat direset');
+    }
+
+    await pool.execute(
+      'UPDATE users SET login_attempts = 0, locked_until = NULL, updated_at = NOW() WHERE id = ?',
+      [id]
+    );
+
+    await auditService.log({
+      userId: resetBy?.id,
+      username: resetBy?.username,
+      action: 'RESET_LOCK',
+      module: 'users',
+      recordId: id,
+      details: { target_username: targetUser[0].username, target_role: targetUser[0].role },
+      ipAddress: resetBy?.ip,
+    });
+
+    return { id, message: 'Lock percobaan login berhasil direset' };
+  },
+
+  
   getStats: async () => {
     const [superAdminCount] = await pool.execute("SELECT COUNT(*) AS total FROM users WHERE role = 'super_admin' AND deleted_at IS NULL");
     const [adminCount] = await pool.execute("SELECT COUNT(*) AS total FROM users WHERE role = 'admin' AND deleted_at IS NULL");
@@ -406,7 +435,7 @@ const userService = {
     };
   },
 
-  // ========== GET PENDING REGISTRATIONS ==========
+  
   getPending: async () => {
     const [rows] = await pool.execute(
       `SELECT id, username, email, nama, nip, jabatan, divisi, nomor_hp, created_at
@@ -417,7 +446,7 @@ const userService = {
     return rows;
   },
 
-  // ========== APPROVE REGISTRATION ==========
+  
   approve: async (id, approvedBy) => {
     const [users] = await pool.execute(
       'SELECT id, username, nama, email, role, registration_status FROM users WHERE id = ? AND deleted_at IS NULL',
@@ -455,7 +484,7 @@ const userService = {
     return { ...updated[0], emailNotif: emailResult };
   },
 
-  // ========== REJECT REGISTRATION ==========
+  
   reject: async (id, reason, rejectedBy) => {
     const [users] = await pool.execute(
       'SELECT id, username, nama, email, role, registration_status FROM users WHERE id = ? AND deleted_at IS NULL',

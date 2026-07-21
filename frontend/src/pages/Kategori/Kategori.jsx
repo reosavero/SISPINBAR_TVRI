@@ -1,8 +1,4 @@
-// ============================================
-// KATEGORI PAGE - Sistem Peminjaman Barang TVRI
-// ============================================
-// Admin: Kategori grid → Kategori detail with barang cards + images
-// ============================================
+
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
@@ -30,7 +26,6 @@ import { getBarangFotoUrl } from '../../utils/format';
 import api from '../../services/api';
 import toast from 'react-hot-toast';
 
-// Icon mapping berdasarkan nama kategori
 const getCategoryIcon = (nama) => {
   const lower = (nama || '').toLowerCase();
   if (lower.includes('kamera') || lower.includes('camera')) return MdCameraAlt;
@@ -84,12 +79,12 @@ const Kategori = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ nama: '', deskripsi: '' });
 
-  // Kategori detail state
+  
   const [selectedKategori, setSelectedKategori] = useState(null);
   const [barangList, setBarangList] = useState([]);
   const [barangLoading, setBarangLoading] = useState(false);
 
-  // Barang detail/edit state
+  
   const [showBarangModal, setShowBarangModal] = useState(false);
   const [showBarangDetail, setShowBarangDetail] = useState(false);
   const [showBarangDelete, setShowBarangDelete] = useState(false);
@@ -101,7 +96,7 @@ const Kategori = () => {
   const [fotoFile, setFotoFile] = useState(null);
   const [imgErrors, setImgErrors] = useState({});
 
-  // Image Crop state
+  
   const [showCropModal, setShowCropModal] = useState(false);
   const [originalImageUrl, setOriginalImageUrl] = useState(null);
   const fotoInputRef = useRef(null);
@@ -153,7 +148,7 @@ const Kategori = () => {
     setBarangList([]);
   };
 
-  // ========== KATEGORI CRUD ==========
+  
   const handleOpenAdd = () => {
     setEditItem(null);
     setForm({ nama: '', deskripsi: '' });
@@ -172,7 +167,7 @@ const Kategori = () => {
     if (!form.nama) { toast.error('Nama kategori wajib diisi'); return; }
     const trimmedNama = form.nama.trim();
 
-    // Cek duplikat nama (client-side)
+    
     const duplicate = categories.find(c => c.nama.toLowerCase() === trimmedNama.toLowerCase());
     if (duplicate && (!editItem || duplicate.id !== editItem.id)) {
       toast.error('Nama kategori sudah digunakan. Silakan gunakan nama lain.');
@@ -211,7 +206,7 @@ const Kategori = () => {
     fetchCategories();
   };
 
-  // ========== BARANG CRUD ==========
+  
   const handleOpenAddBarang = () => {
     setEditBarang(null);
     setFotoPreview(null);
@@ -263,12 +258,12 @@ const Kategori = () => {
     setBarangSaving(true);
     try {
       if (editBarang) {
-        // Update existing barang
+        
         await api.put(`/barang/${editBarang.id}`, {
           ...barangForm,
           kategori_id: parseInt(barangForm.kategori_id),
         });
-        // Upload foto if changed
+        
         if (fotoFile) {
           const formData = new FormData();
           formData.append('foto', fotoFile);
@@ -278,12 +273,12 @@ const Kategori = () => {
         }
         toast.success('Barang berhasil diperbarui');
       } else {
-        // Create new barang
+        
         const res = await api.post('/barang', {
           ...barangForm,
           kategori_id: parseInt(barangForm.kategori_id),
         });
-        // Upload foto if provided
+        
         if (fotoFile) {
           const barangId = res.data?.data?.id;
           if (barangId) {
@@ -298,7 +293,7 @@ const Kategori = () => {
       }
       setShowBarangModal(false);
       fetchBarangByKategori(selectedKategori.id);
-      fetchCategories(); // Refresh counts
+      fetchCategories(); 
     } catch (err) {
       toast.error(err.response?.data?.message || 'Terjadi kesalahan');
     }
@@ -360,7 +355,7 @@ const Kategori = () => {
 
   const filtered = categories.filter(c => c.nama.toLowerCase().includes(search.toLowerCase()));
 
-  // ========== KATEGORI DETAIL VIEW ==========
+  
   if (selectedKategori) {
     const colorIdx = (categories.findIndex(c => c.id === selectedKategori.id)) % categoryColors.length;
     const IconComp = getCategoryIcon(selectedKategori.nama);
@@ -368,7 +363,8 @@ const Kategori = () => {
 
     return (
       <div className="page-container">
-        {/* Back Button */}
+        {
+}
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={handleBackToList}
@@ -385,7 +381,8 @@ const Kategori = () => {
           </div>
         </div>
 
-        {/* Kategori Header */}
+        {
+}
         <div className={`rounded-2xl p-6 mb-6 ${categoryBgColors[safeIdx]}`}>
           <div className="flex items-center gap-4">
             <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${categoryColors[safeIdx]} flex items-center justify-center shadow-lg`}>
@@ -402,12 +399,14 @@ const Kategori = () => {
           </div>
         </div>
 
-        {/* Action Bar */}
+        {
+}
         <div className="flex justify-end mb-3 sm:mb-4">
           <Button icon={FiPlus} onClick={handleOpenAddBarang}>Tambah Barang</Button>
         </div>
 
-        {/* Barang Cards */}
+        {
+}
         {barangLoading ? (
           <div className="flex items-center justify-center py-16">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005BAC]"></div>
@@ -434,7 +433,8 @@ const Kategori = () => {
                   transition={{ delay: idx * 0.05 }}
                   className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all border border-transparent hover:border-[#005BAC]/20 overflow-hidden group"
                >
-                  {/* Image */}
+                  {
+}
                   <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-50 overflow-hidden">
                     {fotoUrl && !imgError ? (
                       <img
@@ -452,7 +452,8 @@ const Kategori = () => {
                     )}
                   </div>
 
-                  {/* Content */}
+                  {
+}
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-sm font-bold text-gray-800 line-clamp-1 flex-1">{item.nama_barang}</h3>
@@ -464,7 +465,8 @@ const Kategori = () => {
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">Stok: {item.jumlah || 1}</span>
                     </div>
 
-                    {/* Action buttons */}
+                    {
+}
                     <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
                       <button
                         onClick={() => { setDetailBarang(item); setShowBarangDetail(true); }}
@@ -492,11 +494,13 @@ const Kategori = () => {
           </div>
         )}
 
-        {/* ========== BARANG ADD/EDIT MODAL ========== */}
+        {
+}
         <Modal isOpen={showBarangModal} onClose={() => setShowBarangModal(false)} title={editBarang ? 'Edit Barang' : 'Tambah Barang'} size="lg">
           <form onSubmit={handleBarangSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Photo Upload */}
+              {
+}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">Foto Barang</label>
                 <div className="flex items-start gap-4">
@@ -619,14 +623,16 @@ const Kategori = () => {
           </form>
         </Modal>
 
-        {/* ========== BARANG DETAIL MODAL ========== */}
+        {
+}
         <Modal isOpen={showBarangDetail} onClose={() => setShowBarangDetail(false)} title="Detail Barang" size="md">
           {detailBarang && (() => {
             const fotoUrl = detailBarang.foto ? getBarangFotoUrl(detailBarang.foto) : null;
             const imgError = imgErrors[`detail-${detailBarang.id}`];
             return (
               <div className="space-y-4">
-                {/* Photo */}
+                {
+}
                 {fotoUrl && !imgError ? (
                   <div className="rounded-xl overflow-hidden bg-gray-100 mb-4">
                     <img src={fotoUrl} alt={detailBarang.nama_barang} className="w-full aspect-[4/3] object-cover" onError={() => setImgErrors(prev => ({ ...prev, [`detail-${detailBarang.id}`]: true }))} />
@@ -648,7 +654,8 @@ const Kategori = () => {
           })()}
         </Modal>
 
-        {/* ========== BARANG DELETE CONFIRM ========== */}
+        {
+}
         <ConfirmDialog
           isOpen={showBarangDelete}
           onClose={() => setShowBarangDelete(false)}
@@ -657,7 +664,8 @@ const Kategori = () => {
           message={`Apakah Anda yakin ingin menghapus "${deleteBarang?.nama_barang}"? Tindakan ini tidak dapat dibatalkan.`}
         />
 
-        {/* ========== IMAGE CROP MODAL ========== */}
+        {
+}
         <ImageCropModal
           isOpen={showCropModal}
           onClose={handleCropCancel}
@@ -669,7 +677,7 @@ const Kategori = () => {
     );
   }
 
-  // ========== KATEGORI LIST VIEW ==========
+  
   return (
     <div className="page-container">
       <div className="page-header">
@@ -731,7 +739,8 @@ const Kategori = () => {
         />
       )}
 
-      {/* Add/Edit Kategori Modal */}
+      {
+}
       <Modal isOpen={showModal} onClose={() => setShowModal(false)} title={editItem ? 'Edit Kategori' : 'Tambah Kategori'}>
         <form onSubmit={handleSubmit}>
           <Input label="Nama Kategori" name="nama" value={form.nama} onChange={(e) => setForm({ ...form, nama: e.target.value })} placeholder="Masukkan nama kategori" required />

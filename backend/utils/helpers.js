@@ -1,6 +1,4 @@
-// ============================================
-// HELPER UTILITIES - Sistem Peminjaman Barang TVRI
-// ============================================
+
 
 const generateKodeBarang = (kategori, urutan) => {
   const prefix = kategori.substring(0, 3).toUpperCase();
@@ -14,13 +12,8 @@ const generateNomorPeminjaman = (urutan) => {
   return `PIN-${year}${month}-${String(urutan).padStart(4, '0')}`;
 };
 
-/**
- * Get current WIB (UTC+7) datetime as MySQL-compatible string.
- * Always returns WIB time regardless of server timezone.
- * Format: 'YYYY-MM-DD HH:MM:SS'
- */
 const getWIBDateTime = (date = new Date()) => {
-  const wibOffset = 7 * 60 * 60 * 1000; // UTC+7 in ms
+  const wibOffset = 7 * 60 * 60 * 1000; 
   const wibDate = new Date(date.getTime() + wibOffset);
   const y = wibDate.getUTCFullYear();
   const m = String(wibDate.getUTCMonth() + 1).padStart(2, '0');
@@ -31,10 +24,6 @@ const getWIBDateTime = (date = new Date()) => {
   return `${y}-${m}-${d} ${h}:${min}:${s}`;
 };
 
-/**
- * Get current WIB (UTC+7) date as ISO date string.
- * Format: 'YYYY-MM-DD'
- */
 const getWIBDate = (date = new Date()) => {
   const wibOffset = 7 * 60 * 60 * 1000;
   const wibDate = new Date(date.getTime() + wibOffset);
